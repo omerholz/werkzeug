@@ -9,11 +9,13 @@ import re
 import typing as t
 import warnings
 
-from ._internal import _check_str_tuple
-from ._internal import _decode_idna
-from ._internal import _encode_idna
-from ._internal import _make_encode_wrapper
-from ._internal import _to_str
+from ._internal import (
+    _check_str_tuple,
+    _decode_idna,
+    _encode_idna,
+    _make_encode_wrapper,
+    _to_str,
+)
 
 if t.TYPE_CHECKING:
     from . import datastructures as ds
@@ -23,19 +25,15 @@ _scheme_re = re.compile(r"^[a-zA-Z0-9+-.]+$")
 
 # Characters that are safe in any part of an URL.
 _always_safe = frozenset(
-    bytearray(
-        b"abcdefghijklmnopqrstuvwxyz"
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        b"0123456789"
-        b"-._~"
-    )
-)
+    bytearray(b"abcdefghijklmnopqrstuvwxyz"
+              b"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+              b"0123456789"
+              b"-._~"))
 
 _hexdigits = "0123456789ABCDEFabcdef"
 _hextobyte = {
     f"{a}{b}".encode("ascii"): int(f"{a}{b}", 16)
-    for a in _hexdigits
-    for b in _hexdigits
+    for a in _hexdigits for b in _hexdigits
 }
 _bytetohex = [f"%{char:02X}".encode("ascii") for char in range(256)]
 
@@ -142,7 +140,8 @@ class BaseURL(_URLTuple):
         """
         return self._split_auth()[1]
 
-    def decode_query(self, *args: t.Any, **kwargs: t.Any) -> "ds.MultiDict[str, str]":
+    def decode_query(self, *args: t.Any,
+                     **kwargs: t.Any) -> "ds.MultiDict[str, str]":
         """Decodes the query part of the URL.  Ths is a shortcut for
         calling :func:`url_decode` on the query argument.  The arguments and
         keyword arguments are forwarded to :func:`url_decode` unchanged.
@@ -175,11 +174,12 @@ class BaseURL(_URLTuple):
             filter(
                 None,
                 [
-                    url_quote(self.raw_username or "", "utf-8", "strict", "/:%"),
-                    url_quote(self.raw_password or "", "utf-8", "strict", "/:%"),
+                    url_quote(self.raw_username or "", "utf-8", "strict",
+                              "/:%"),
+                    url_quote(self.raw_password or "", "utf-8", "strict",
+                              "/:%"),
                 ],
-            )
-        )
+            ))
         if auth:
             rv = f"{auth}@{rv}"
         return rv
@@ -200,8 +200,7 @@ class BaseURL(_URLTuple):
                     _url_unquote_legacy(self.raw_username or "", "/:%@"),
                     _url_unquote_legacy(self.raw_password or "", "/:%@"),
                 ],
-            )
-        )
+            ))
         if auth:
             rv = f"{auth}@{rv}"
         return rv
@@ -228,7 +227,8 @@ class BaseURL(_URLTuple):
         return url_parse(uri_to_iri(self))
 
     def get_file_location(
-        self, pathformat: t.Optional[str] = None
+        self,
+        pathformat: t.Optional[str] = None
     ) -> t.Tuple[t.Optional[str], t.Optional[str]]:
         """Returns a tuple with the location of the file in the form
         ``(server, location)``.  If the netloc is empty in the URL or
@@ -321,7 +321,7 @@ class BaseURL(_URLTuple):
             return rv, None
 
         host = rv[1:idx]
-        rest = rv[idx + 1 :]
+        rest = rv[idx + 1:]
         if rest.startswith(self._colon):
             return host, rest[1:]
         return host, None
@@ -339,7 +339,9 @@ class URL(BaseURL):
     _lbracket = "["
     _rbracket = "]"
 
-    def encode(self, charset: str = "utf-8", errors: str = "replace") -> "BytesURL":
+    def encode(self,
+               charset: str = "utf-8",
+               errors: str = "replace") -> "BytesURL":
         """Encodes the URL to a tuple made out of bytes.  The charset is
         only being used for the path, query and fragment.
         """
@@ -381,12 +383,13 @@ class BytesURL(BaseURL):
         )
 
 
-_unquote_maps: t.Dict[t.FrozenSet[int], t.Dict[bytes, int]] = {frozenset(): _hextobyte}
+_unquote_maps: t.Dict[t.FrozenSet[int], t.Dict[bytes, int]] = {
+    frozenset(): _hextobyte
+}
 
 
-def _unquote_to_bytes(
-    string: t.Union[str, bytes], unsafe: t.Union[str, bytes] = ""
-) -> bytes:
+def _unquote_to_bytes(string: t.Union[str, bytes],
+                      unsafe: t.Union[str, bytes] = "") -> bytes:
     if isinstance(string, str):
         string = string.encode("utf-8")
 
@@ -401,7 +404,8 @@ def _unquote_to_bytes(
         hex_to_byte = _unquote_maps[unsafe]
     except KeyError:
         hex_to_byte = _unquote_maps[unsafe] = {
-            h: b for h, b in _hextobyte.items() if b not in unsafe
+            h: b
+            for h, b in _hextobyte.items() if b not in unsafe
         }
 
     for group in groups:
@@ -449,14 +453,17 @@ def _url_encode_impl(
 
 def _url_unquote_legacy(value: str, unsafe: str = "") -> str:
     try:
-        return url_unquote(value, charset="utf-8", errors="strict", unsafe=unsafe)
+        return url_unquote(value,
+                           charset="utf-8",
+                           errors="strict",
+                           unsafe=unsafe)
     except UnicodeError:
         return url_unquote(value, charset="latin1", unsafe=unsafe)
 
 
-def url_parse(
-    url: str, scheme: t.Optional[str] = None, allow_fragments: bool = True
-) -> BaseURL:
+def url_parse(url: str,
+              scheme: t.Optional[str] = None,
+              allow_fragments: bool = True) -> BaseURL:
     """Parses a URL from a string into a :class:`URL` tuple.  If the URL
     is lacking a scheme it can be provided as second argument. Otherwise,
     it is ignored.  Optionally fragments can be stripped from the URL
@@ -479,7 +486,7 @@ def url_parse(
     if i > 0 and _scheme_re.match(_to_str(url[:i], errors="replace")):
         # make sure "iri" is not actually a port number (in which case
         # "scheme" is really part of the path)
-        rest = url[i + 1 :]
+        rest = url[i + 1:]
         if not rest or any(c not in s("0123456789") for c in rest):
             # not a port number
             scheme, url = url[:i].lower(), rest
@@ -491,9 +498,9 @@ def url_parse(
             if wdelim >= 0:
                 delim = min(delim, wdelim)
         netloc, url = url[2:delim], url[delim:]
-        if (s("[") in netloc and s("]") not in netloc) or (
-            s("]") in netloc and s("[") not in netloc
-        ):
+        if (s("[") in netloc and
+                s("]") not in netloc) or (s("]") in netloc and
+                                          s("[") not in netloc):
             raise ValueError("Invalid IPv6 URL")
 
     if allow_fragments and s("#") in url:
@@ -527,7 +534,8 @@ def _make_fast_url_quote(
     if isinstance(unsafe, str):
         unsafe = unsafe.encode(charset, errors)
 
-    safe = (frozenset(bytearray(safe)) | _always_safe) - frozenset(bytearray(unsafe))
+    safe = (frozenset(bytearray(safe)) | _always_safe) - frozenset(
+        bytearray(unsafe))
     table = [chr(c) if c in safe else f"%{c:02X}" for c in range(256)]
 
     def quote(string: bytes) -> str:
@@ -569,7 +577,8 @@ def url_quote(
         safe = safe.encode(charset, errors)
     if isinstance(unsafe, str):
         unsafe = unsafe.encode(charset, errors)
-    safe = (frozenset(bytearray(safe)) | _always_safe) - frozenset(bytearray(unsafe))
+    safe = (frozenset(bytearray(safe)) | _always_safe) - frozenset(
+        bytearray(unsafe))
     rv = bytearray()
     for char in bytearray(string):
         if char in safe:
@@ -579,9 +588,10 @@ def url_quote(
     return bytes(rv).decode(charset)
 
 
-def url_quote_plus(
-    string: str, charset: str = "utf-8", errors: str = "strict", safe: str = ""
-) -> str:
+def url_quote_plus(string: str,
+                   charset: str = "utf-8",
+                   errors: str = "strict",
+                   safe: str = "") -> str:
     """URL encode a single string with the given encoding and convert
     whitespace to "+".
 
@@ -589,7 +599,8 @@ def url_quote_plus(
     :param charset: The charset to be used.
     :param safe: An optional sequence of safe characters.
     """
-    return url_quote(string, charset, errors, safe + " ", "+").replace(" ", "+")
+    return url_quote(string, charset, errors, safe + " ",
+                     "+").replace(" ", "+")
 
 
 def url_unparse(components: t.Tuple[str, str, str, str, str]) -> str:
@@ -644,9 +655,9 @@ def url_unquote(
     return rv.decode(charset, errors)
 
 
-def url_unquote_plus(
-    s: t.Union[str, bytes], charset: str = "utf-8", errors: str = "replace"
-) -> str:
+def url_unquote_plus(s: t.Union[str, bytes],
+                     charset: str = "utf-8",
+                     errors: str = "replace") -> str:
     """URL decode a single string with the given `charset` and decode "+" to
     whitespace.
 
@@ -685,7 +696,8 @@ def url_fix(s: str, charset: str = "utf-8") -> str:
 
     # For the specific case that we look like a malformed windows URL
     # we want to fix this up manually:
-    if s.startswith("file://") and s[7:8].isalpha() and s[8:10] in (":/", "|/"):
+    if s.startswith("file://") and s[7:8].isalpha() and s[8:10] in (":/",
+                                                                    "|/"):
         s = f"file:///{s[7:]}"
 
     url = url_parse(s)
@@ -705,7 +717,7 @@ def _codec_error_url_quote(e: UnicodeError) -> t.Tuple[str, int]:
     """
     # the docs state that UnicodeError does have these attributes,
     # but mypy isn't picking them up
-    out = _fast_url_quote(e.object[e.start : e.end])  # type: ignore
+    out = _fast_url_quote(e.object[e.start:e.end])  # type: ignore
     return out, e.end  # type: ignore
 
 
@@ -743,7 +755,8 @@ def uri_to_iri(
     path = url_unquote(uri.path, charset, errors, _to_iri_unsafe)
     query = url_unquote(uri.query, charset, errors, _to_iri_unsafe)
     fragment = url_unquote(uri.fragment, charset, errors, _to_iri_unsafe)
-    return url_unparse((uri.scheme, uri.decode_netloc(), path, query, fragment))
+    return url_unparse(
+        (uri.scheme, uri.decode_netloc(), path, query, fragment))
 
 
 # reserved characters remain unquoted when quoting to URI
@@ -813,7 +826,8 @@ def iri_to_uri(
     path = url_quote(iri.path, charset, errors, _to_uri_safe)
     query = url_quote(iri.query, charset, errors, _to_uri_safe)
     fragment = url_quote(iri.fragment, charset, errors, _to_uri_safe)
-    return url_unparse((iri.scheme, iri.encode_netloc(), path, query, fragment))
+    return url_unparse(
+        (iri.scheme, iri.encode_netloc(), path, query, fragment))
 
 
 def url_decode(
@@ -863,9 +877,11 @@ def url_decode(
         separator = separator.encode(charset or "ascii")  # type: ignore
     return cls(
         _url_decode_impl(
-            s.split(separator), charset, include_empty, errors  # type: ignore
-        )
-    )
+            s.split(separator),
+            charset,
+            include_empty,
+            errors  # type: ignore
+        ))
 
 
 def url_decode_stream(
@@ -931,9 +947,9 @@ def url_decode_stream(
     return cls(decoder)
 
 
-def _url_decode_impl(
-    pair_iter: t.Iterable[t.AnyStr], charset: str, include_empty: bool, errors: str
-) -> t.Iterator[t.Tuple[str, str]]:
+def _url_decode_impl(pair_iter: t.Iterable[t.AnyStr], charset: str,
+                     include_empty: bool,
+                     errors: str) -> t.Iterator[t.Tuple[str, str]]:
     for pair in pair_iter:
         if not pair:
             continue
@@ -1060,9 +1076,9 @@ def url_join(
         return base
 
     bscheme, bnetloc, bpath, bquery, bfragment = url_parse(
-        base, allow_fragments=allow_fragments
-    )
-    scheme, netloc, path, query, fragment = url_parse(url, bscheme, allow_fragments)
+        base, allow_fragments=allow_fragments)
+    scheme, netloc, path, query, fragment = url_parse(url, bscheme,
+                                                      allow_fragments)
     if scheme != bscheme:
         return url
     if netloc:
@@ -1089,8 +1105,9 @@ def url_join(
         i = 1
         n = len(segments) - 1
         while i < n:
-            if segments[i] == s("..") and segments[i - 1] not in (s(""), s("..")):
-                del segments[i - 1 : i + 1]
+            if segments[i] == s("..") and segments[i - 1] not in (s(""),
+                                                                  s("..")):
+                del segments[i - 1:i + 1]
                 break
             i += 1
         else:
@@ -1161,8 +1178,11 @@ class Href:
     """
 
     def __init__(  # type: ignore
-        self, base="./", charset="utf-8", sort=False, key=None
-    ):
+            self,
+            base="./",
+            charset="utf-8",
+            sort=False,
+            key=None):
         warnings.warn(
             "'Href' is deprecated and will be removed in Werkzeug 2.1."
             " Use 'werkzeug.routing' instead.",
@@ -1188,17 +1208,18 @@ class Href:
     def __call__(self, *path, **query):  # type: ignore
         if path and isinstance(path[-1], dict):
             if query:
-                raise TypeError("keyword arguments and query-dicts can't be combined")
+                raise TypeError(
+                    "keyword arguments and query-dicts can't be combined")
             query, path = path[-1], path[:-1]
         elif query:
-            query = {k[:-1] if k.endswith("_") else k: v for k, v in query.items()}
-        path = "/".join(
-            [
-                _to_str(url_quote(x, self.charset), "ascii")
-                for x in path
-                if x is not None
-            ]
-        ).lstrip("/")
+            query = {
+                k[:-1] if k.endswith("_") else k: v
+                for k, v in query.items()
+            }
+        path = "/".join([
+            _to_str(url_quote(x, self.charset), "ascii") for x in path
+            if x is not None
+        ]).lstrip("/")
         rv = self.base
         if path:
             if not rv.endswith("/"):
@@ -1206,6 +1227,6 @@ class Href:
             rv = url_join(rv, f"./{path}")
         if query:
             rv += "?" + _to_str(
-                url_encode(query, self.charset, sort=self.sort, key=self.key), "ascii"
-            )
+                url_encode(query, self.charset, sort=self.sort, key=self.key),
+                "ascii")
         return rv

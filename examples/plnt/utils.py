@@ -1,15 +1,13 @@
 import re
+from html.entities import name2codepoint
 from os import path
 
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
-from werkzeug.local import Local
-from werkzeug.local import LocalManager
-from werkzeug.routing import Map
-from werkzeug.routing import Rule
+from jinja2 import Environment, FileSystemLoader
+
+from werkzeug.local import Local, LocalManager
+from werkzeug.routing import Map, Rule
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import Response
-
 
 # context locals.  these two objects are use by the application to
 # bind objects to the current context.  A context is defined as the
@@ -19,28 +17,22 @@ from werkzeug.wrappers import Response
 local = Local()
 local_manager = LocalManager([local])
 
-
 # proxy objects
 request = local("request")
 application = local("application")
 url_adapter = local("url_adapter")
 
-
 # let's use jinja for templates this time
 template_path = path.join(path.dirname(__file__), "templates")
 jinja_env = Environment(loader=FileSystemLoader(template_path))
-
 
 # the collected url patterns
 url_map = Map([Rule("/shared/<path:file>", endpoint="shared")])
 endpoints = {}
 
-
 _par_re = re.compile(r"\n{2,}")
 _entity_re = re.compile(r"&([^;]+);")
 _striptags_re = re.compile(r"(<!--.*-->|<[^>]*>)")
-
-from html.entities import name2codepoint
 
 html_entities = name2codepoint.copy()
 html_entities["apos"] = 39
@@ -49,7 +41,6 @@ del name2codepoint
 
 def expose(url_rule, endpoint=None, **kwargs):
     """Expose this function to the web layer."""
-
     def decorate(f):
         e = endpoint or f.__name__
         endpoints[e] = f
@@ -78,7 +69,6 @@ def url_for(endpoint, **kw):
 
 def strip_tags(s):
     """Resolve HTML entities and remove tags from a string."""
-
     def handle_match(m):
         name = m.group(1)
         if name in html_entities:
@@ -111,11 +101,8 @@ class Pagination:
 
     @cached_property
     def entries(self):
-        return (
-            self.query.offset((self.page - 1) * self.per_page)
-            .limit(self.per_page)
-            .all()
-        )
+        return (self.query.offset(
+            (self.page - 1) * self.per_page).limit(self.per_page).all())
 
     @cached_property
     def count(self):

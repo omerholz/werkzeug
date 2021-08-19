@@ -12,9 +12,8 @@ if t.TYPE_CHECKING:
 SALT_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 DEFAULT_PBKDF2_ITERATIONS = 260000
 
-_os_alt_seps: t.List[str] = list(
-    sep for sep in [os.path.sep, os.path.altsep] if sep is not None and sep != "/"
-)
+_os_alt_seps: t.List[str] = list(sep for sep in [os.path.sep, os.path.altsep]
+                                 if sep is not None and sep != "/")
 
 
 def pbkdf2_hex(
@@ -169,9 +168,9 @@ def _hash_internal(method: str, salt: str, password: str) -> t.Tuple[str, str]:
     return hashlib.new(method, password).hexdigest(), method
 
 
-def generate_password_hash(
-    password: str, method: str = "pbkdf2:sha256", salt_length: int = 16
-) -> str:
+def generate_password_hash(password: str,
+                           method: str = "pbkdf2:sha256",
+                           salt_length: int = 16) -> str:
     """Hash a password with the given method and salt with a string of
     the given length. The format of the string returned includes the method
     that was used so that :func:`check_password_hash` can check the hash.
@@ -216,7 +215,8 @@ def check_password_hash(pwhash: str, password: str) -> bool:
         return False
 
     method, salt, hashval = pwhash.split("$", 2)
-    return hmac.compare_digest(_hash_internal(method, salt, password)[0], hashval)
+    return hmac.compare_digest(
+        _hash_internal(method, salt, password)[0], hashval)
 
 
 def safe_join(directory: str, *pathnames: str) -> t.Optional[str]:
@@ -234,12 +234,9 @@ def safe_join(directory: str, *pathnames: str) -> t.Optional[str]:
         if filename != "":
             filename = posixpath.normpath(filename)
 
-        if (
-            any(sep in filename for sep in _os_alt_seps)
-            or os.path.isabs(filename)
-            or filename == ".."
-            or filename.startswith("../")
-        ):
+        if (any(sep in filename for sep in _os_alt_seps) or
+                os.path.isabs(filename) or filename == ".." or
+                filename.startswith("../")):
             return None
 
         parts.append(filename)

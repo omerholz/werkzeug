@@ -13,31 +13,26 @@ import os
 import pkgutil
 import posixpath
 import typing as t
-from datetime import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 from io import BytesIO
 from time import time
 from zlib import adler32
 
 from ..filesystem import get_filesystem_encoding
-from ..http import http_date
-from ..http import is_resource_modified
+from ..http import http_date, is_resource_modified
 from ..security import safe_join
 from ..utils import get_content_type
-from ..wsgi import get_path_info
-from ..wsgi import wrap_file
+from ..wsgi import get_path_info, wrap_file
 
 _TOpener = t.Callable[[], t.Tuple[t.IO[bytes], datetime, int]]
-_TLoader = t.Callable[[t.Optional[str]], t.Tuple[t.Optional[str], t.Optional[_TOpener]]]
+_TLoader = t.Callable[[t.Optional[str]], t.Tuple[t.Optional[str],
+                                                 t.Optional[_TOpener]]]
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 
 class SharedDataMiddleware:
-
     """A WSGI middleware which provides static content for development
     environments or simple server setups. Its usage is quite simple::
 
@@ -101,10 +96,10 @@ class SharedDataMiddleware:
     def __init__(
         self,
         app: "WSGIApplication",
-        exports: t.Union[
-            t.Dict[str, t.Union[str, t.Tuple[str, str]]],
-            t.Iterable[t.Tuple[str, t.Union[str, t.Tuple[str, str]]]],
-        ],
+        exports: t.Union[t.Dict[str, t.Union[str, t.Tuple[str, str]]],
+                         t.Iterable[t.Tuple[str, t.Union[str,
+                                                         t.Tuple[str,
+                                                                 str]]]], ],
         disallow: None = None,
         cache: bool = True,
         cache_timeout: int = 60 * 60 * 12,
@@ -148,7 +143,8 @@ class SharedDataMiddleware:
     def _opener(self, filename: str) -> _TOpener:
         return lambda: (
             open(filename, "rb"),
-            datetime.fromtimestamp(os.path.getmtime(filename), tz=timezone.utc),
+            datetime.fromtimestamp(os.path.getmtime(filename), tz=timezone.utc
+                                   ),
             int(os.path.getsize(filename)),
         )
 
@@ -184,16 +180,16 @@ class SharedDataMiddleware:
                 if isinstance(resource, BytesIO):
                     return (
                         basename,
-                        lambda: (resource, load_time, len(resource.getvalue())),
+                        lambda:
+                        (resource, load_time, len(resource.getvalue())),
                     )
 
                 return (
                     basename,
                     lambda: (
                         resource,
-                        datetime.fromtimestamp(
-                            os.path.getmtime(resource.name), tz=timezone.utc
-                        ),
+                        datetime.fromtimestamp(os.path.getmtime(resource.name),
+                                               tz=timezone.utc),
                         os.path.getsize(resource.name),
                     ),
                 )
@@ -202,7 +198,8 @@ class SharedDataMiddleware:
             # Python 3.6
             package_filename = provider.get_filename(package)  # type: ignore
             is_filesystem = os.path.exists(package_filename)
-            root = os.path.join(os.path.dirname(package_filename), package_path)
+            root = os.path.join(os.path.dirname(package_filename),
+                                package_path)
 
             def loader(
                 path: t.Optional[str],
@@ -251,19 +248,18 @@ class SharedDataMiddleware:
 
         return loader
 
-    def generate_etag(self, mtime: datetime, file_size: int, real_filename: str) -> str:
+    def generate_etag(self, mtime: datetime, file_size: int,
+                      real_filename: str) -> str:
         if not isinstance(real_filename, bytes):
             real_filename = real_filename.encode(  # type: ignore
-                get_filesystem_encoding()
-            )
+                get_filesystem_encoding())
 
         timestamp = mtime.timestamp()
         checksum = adler32(real_filename) & 0xFFFFFFFF  # type: ignore
         return f"wzsdm-{timestamp}-{file_size}-{checksum}"
 
-    def __call__(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def __call__(self, environ: "WSGIEnvironment",
+                 start_response: "StartResponse") -> t.Iterable[bytes]:
         path = get_path_info(environ)
         file_loader = None
 
@@ -278,23 +274,26 @@ class SharedDataMiddleware:
                 search_path += "/"
 
             if path.startswith(search_path):
-                real_filename, file_loader = loader(path[len(search_path) :])
+                real_filename, file_loader = loader(path[len(search_path):])
 
                 if file_loader is not None:
                     break
 
-        if file_loader is None or not self.is_allowed(real_filename):  # type: ignore
+        if file_loader is None or not self.is_allowed(
+                real_filename):  # type: ignore
             return self.app(environ, start_response)
 
         guessed_type = mimetypes.guess_type(real_filename)  # type: ignore
-        mime_type = get_content_type(guessed_type[0] or self.fallback_mimetype, "utf-8")
+        mime_type = get_content_type(guessed_type[0] or self.fallback_mimetype,
+                                     "utf-8")
         f, mtime, file_size = file_loader()
 
         headers = [("Date", http_date())]
 
         if self.cache:
             timeout = self.cache_timeout
-            etag = self.generate_etag(mtime, file_size, real_filename)  # type: ignore
+            etag = self.generate_etag(mtime, file_size,
+                                      real_filename)  # type: ignore
             headers += [
                 ("Etag", f'"{etag}"'),
                 ("Cache-Control", f"max-age={timeout}, public"),
@@ -309,12 +308,10 @@ class SharedDataMiddleware:
         else:
             headers.append(("Cache-Control", "public"))
 
-        headers.extend(
-            (
-                ("Content-Type", mime_type),
-                ("Content-Length", str(file_size)),
-                ("Last-Modified", http_date(mtime)),
-            )
-        )
+        headers.extend((
+            ("Content-Type", mime_type),
+            ("Content-Length", str(file_size)),
+            ("Last-Modified", http_date(mtime)),
+        ))
         start_response("200 OK", headers)
         return wrap_file(environ, f)

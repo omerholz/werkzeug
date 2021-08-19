@@ -4,9 +4,8 @@ import typing as t
 import warnings
 
 # We do not trust traditional unixes.
-has_likely_buggy_unicode_filesystem = (
-    sys.platform.startswith("linux") or "bsd" in sys.platform
-)
+has_likely_buggy_unicode_filesystem = (sys.platform.startswith("linux") or
+                                       "bsd" in sys.platform)
 
 
 def _is_ascii_encoding(encoding: t.Optional[str]) -> bool:
@@ -43,7 +42,8 @@ def get_filesystem_encoding() -> str:
     """
     global _warned_about_filesystem_encoding
     rv = sys.getfilesystemencoding()
-    if has_likely_buggy_unicode_filesystem and not rv or _is_ascii_encoding(rv):
+    if has_likely_buggy_unicode_filesystem and not rv or _is_ascii_encoding(
+            rv):
         if not _warned_about_filesystem_encoding:
             warnings.warn(
                 "Detected a misconfigured UNIX filesystem: Will use"

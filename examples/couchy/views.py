@@ -2,11 +2,7 @@ from werkzeug.exceptions import NotFound
 from werkzeug.utils import redirect
 
 from .models import URL
-from .utils import expose
-from .utils import Pagination
-from .utils import render_template
-from .utils import url_for
-from .utils import validate_url
+from .utils import Pagination, expose, render_template, url_for, validate_url
 
 
 @expose("/")

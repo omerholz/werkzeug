@@ -11,9 +11,11 @@ from pathlib import Path
 import pytest
 
 from werkzeug import run_simple
-from werkzeug._reloader import _find_stat_paths
-from werkzeug._reloader import _find_watchdog_paths
-from werkzeug._reloader import _get_args_for_reloading
+from werkzeug._reloader import (
+    _find_stat_paths,
+    _find_watchdog_paths,
+    _get_args_for_reloading,
+)
 from werkzeug.datastructures import FileStorage
 from werkzeug.serving import make_ssl_devcert
 from werkzeug.test import stream_encode_multipart
@@ -29,9 +31,8 @@ from werkzeug.test import stream_encode_multipart
         pytest.param(
             {"hostname": "unix"},
             id="unix socket",
-            marks=pytest.mark.skipif(
-                not hasattr(socket, "AF_UNIX"), reason="requires unix socket support"
-            ),
+            marks=pytest.mark.skipif(not hasattr(socket, "AF_UNIX"),
+                                     reason="requires unix socket support"),
         ),
     ],
 )
@@ -88,9 +89,8 @@ def test_ssl_object(dev_server):
 
 @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
 @pytest.mark.parametrize("reloader_type", ["stat", "watchdog"])
-@pytest.mark.skipif(
-    os.name == "nt" and "CI" in os.environ, reason="unreliable on Windows during CI"
-)
+@pytest.mark.skipif(os.name == "nt" and "CI" in os.environ,
+                    reason="unreliable on Windows during CI")
 def test_reloader_sys_path(tmp_path, dev_server, reloader_type):
     """This tests the general behavior of the reloader. It also tests
     that fixing an import error triggers a reload, not just Python
@@ -102,7 +102,8 @@ def test_reloader_sys_path(tmp_path, dev_server, reloader_type):
     client = dev_server("reloader", reloader_type=reloader_type)
     assert client.request().status == 500
 
-    shutil.copyfile(Path(__file__).parent / "live_apps" / "standard_app.py", real_path)
+    shutil.copyfile(
+        Path(__file__).parent / "live_apps" / "standard_app.py", real_path)
     client.wait_for_log(f" * Detected change in {str(real_path)!r}, reloading")
     client.wait_for_reload()
     assert client.request().status == 200
@@ -147,7 +148,8 @@ def test_content_type_and_length(standard_app):
     assert "CONTENT_TYPE" not in r.json
     assert "CONTENT_LENGTH" not in r.json
 
-    r = standard_app.request(body=b"{}", headers={"content-type": "application/json"})
+    r = standard_app.request(body=b"{}",
+                             headers={"content-type": "application/json"})
     assert r.json["CONTENT_TYPE"] == "application/json"
     assert r.json["CONTENT_LENGTH"] == "2"
 
@@ -161,16 +163,16 @@ def test_port_is_int():
 @pytest.mark.parametrize("send_length", [False, True])
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="requires Python >= 3.7")
 def test_chunked_encoding(monkeypatch, dev_server, send_length):
-    stream, length, boundary = stream_encode_multipart(
-        {
-            "value": "this is text",
-            "file": FileStorage(
-                BytesIO(b"this is a file"),
-                filename="test.txt",
-                content_type="text/plain",
-            ),
-        }
-    )
+    stream, length, boundary = stream_encode_multipart({
+        "value":
+        "this is text",
+        "file":
+        FileStorage(
+            BytesIO(b"this is a file"),
+            filename="test.txt",
+            content_type="text/plain",
+        ),
+    })
     client = dev_server("data")
     # Small block size to produce multiple chunks.
     conn = client.connect(blocksize=128)

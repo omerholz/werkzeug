@@ -26,9 +26,7 @@ import typing as t
 from ..http import parse_list_header
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 
 class ProxyFix:
@@ -106,7 +104,8 @@ class ProxyFix:
         self.x_port = x_port
         self.x_prefix = x_prefix
 
-    def _get_real_value(self, trusted: int, value: t.Optional[str]) -> t.Optional[str]:
+    def _get_real_value(self, trusted: int,
+                        value: t.Optional[str]) -> t.Optional[str]:
         """Get the real value from a list header based on the configured
         number of trusted proxies.
 
@@ -127,9 +126,8 @@ class ProxyFix:
             return values[-trusted]
         return None
 
-    def __call__(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def __call__(self, environ: "WSGIEnvironment",
+                 start_response: "StartResponse") -> t.Iterable[bytes]:
         """Modify the WSGI environ based on the various ``Forwarded``
         headers before calling the wrapped application. Store the
         original environ values in ``werkzeug.proxy_fix.orig_{key}``.
@@ -138,30 +136,29 @@ class ProxyFix:
         orig_remote_addr = environ_get("REMOTE_ADDR")
         orig_wsgi_url_scheme = environ_get("wsgi.url_scheme")
         orig_http_host = environ_get("HTTP_HOST")
-        environ.update(
-            {
-                "werkzeug.proxy_fix.orig": {
-                    "REMOTE_ADDR": orig_remote_addr,
-                    "wsgi.url_scheme": orig_wsgi_url_scheme,
-                    "HTTP_HOST": orig_http_host,
-                    "SERVER_NAME": environ_get("SERVER_NAME"),
-                    "SERVER_PORT": environ_get("SERVER_PORT"),
-                    "SCRIPT_NAME": environ_get("SCRIPT_NAME"),
-                }
+        environ.update({
+            "werkzeug.proxy_fix.orig": {
+                "REMOTE_ADDR": orig_remote_addr,
+                "wsgi.url_scheme": orig_wsgi_url_scheme,
+                "HTTP_HOST": orig_http_host,
+                "SERVER_NAME": environ_get("SERVER_NAME"),
+                "SERVER_PORT": environ_get("SERVER_PORT"),
+                "SCRIPT_NAME": environ_get("SCRIPT_NAME"),
             }
-        )
+        })
 
-        x_for = self._get_real_value(self.x_for, environ_get("HTTP_X_FORWARDED_FOR"))
+        x_for = self._get_real_value(self.x_for,
+                                     environ_get("HTTP_X_FORWARDED_FOR"))
         if x_for:
             environ["REMOTE_ADDR"] = x_for
 
-        x_proto = self._get_real_value(
-            self.x_proto, environ_get("HTTP_X_FORWARDED_PROTO")
-        )
+        x_proto = self._get_real_value(self.x_proto,
+                                       environ_get("HTTP_X_FORWARDED_PROTO"))
         if x_proto:
             environ["wsgi.url_scheme"] = x_proto
 
-        x_host = self._get_real_value(self.x_host, environ_get("HTTP_X_FORWARDED_HOST"))
+        x_host = self._get_real_value(self.x_host,
+                                      environ_get("HTTP_X_FORWARDED_HOST"))
         if x_host:
             environ["HTTP_HOST"] = x_host
             parts = x_host.split(":", 1)
@@ -169,7 +166,8 @@ class ProxyFix:
             if len(parts) == 2:
                 environ["SERVER_PORT"] = parts[1]
 
-        x_port = self._get_real_value(self.x_port, environ_get("HTTP_X_FORWARDED_PORT"))
+        x_port = self._get_real_value(self.x_port,
+                                      environ_get("HTTP_X_FORWARDED_PORT"))
         if x_port:
             host = environ.get("HTTP_HOST")
             if host:
@@ -178,9 +176,8 @@ class ProxyFix:
                 environ["HTTP_HOST"] = f"{host}:{x_port}"
             environ["SERVER_PORT"] = x_port
 
-        x_prefix = self._get_real_value(
-            self.x_prefix, environ_get("HTTP_X_FORWARDED_PREFIX")
-        )
+        x_prefix = self._get_real_value(self.x_prefix,
+                                        environ_get("HTTP_X_FORWARDED_PREFIX"))
         if x_prefix:
             environ["SCRIPT_NAME"] = x_prefix
 

@@ -1,19 +1,15 @@
 import csv
 import io
-from os.path import dirname
-from os.path import join
+from os.path import dirname, join
 
 import pytest
 
 from werkzeug import formparser
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import RequestEntityTooLarge
-from werkzeug.formparser import FormDataParser
-from werkzeug.formparser import parse_form_data
-from werkzeug.test import Client
-from werkzeug.test import create_environ
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.formparser import FormDataParser, parse_form_data
+from werkzeug.test import Client, create_environ
+from werkzeug.wrappers import Request, Response
 
 
 @Request.application
@@ -22,16 +18,12 @@ def form_data_consumer(request):
     if result_object == "text":
         return Response(repr(request.form["text"]))
     f = request.files[result_object]
-    return Response(
-        b"\n".join(
-            (
-                repr(f.filename).encode("ascii"),
-                repr(f.name).encode("ascii"),
-                repr(f.content_type).encode("ascii"),
-                f.stream.read(),
-            )
-        )
-    )
+    return Response(b"\n".join((
+        repr(f.filename).encode("ascii"),
+        repr(f.name).encode("ascii"),
+        repr(f.content_type).encode("ascii"),
+        f.stream.read(),
+    )))
 
 
 def get_contents(filename):
@@ -69,12 +61,10 @@ class TestFormParser:
         req.max_form_memory_size = 400
         assert req.form["foo"] == "Hello World"
 
-        data = (
-            b"--foo\r\nContent-Disposition: form-field; name=foo\r\n\r\n"
-            b"Hello World\r\n"
-            b"--foo\r\nContent-Disposition: form-field; name=bar\r\n\r\n"
-            b"bar=baz\r\n--foo--"
-        )
+        data = (b"--foo\r\nContent-Disposition: form-field; name=foo\r\n\r\n"
+                b"Hello World\r\n"
+                b"--foo\r\nContent-Disposition: form-field; name=bar\r\n\r\n"
+                b"bar=baz\r\n--foo--")
         req = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),
@@ -128,12 +118,10 @@ class TestFormParser:
         assert req.form["foo"] == "Hello World"
 
     def test_missing_multipart_boundary(self):
-        data = (
-            b"--foo\r\nContent-Disposition: form-field; name=foo\r\n\r\n"
-            b"Hello World\r\n"
-            b"--foo\r\nContent-Disposition: form-field; name=bar\r\n\r\n"
-            b"bar=baz\r\n--foo--"
-        )
+        data = (b"--foo\r\nContent-Disposition: form-field; name=foo\r\n\r\n"
+                b"Hello World\r\n"
+                b"--foo\r\nContent-Disposition: form-field; name=bar\r\n\r\n"
+                b"bar=baz\r\n--foo--")
         req = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),
@@ -165,16 +153,16 @@ class TestFormParser:
         assert len(files) == 0
 
     @pytest.mark.parametrize(
-        ("no_spooled", "size"), ((False, 100), (False, 3000), (True, 100), (True, 3000))
-    )
+        ("no_spooled", "size"),
+        ((False, 100), (False, 3000), (True, 100), (True, 3000)))
     def test_default_stream_factory(self, no_spooled, size, monkeypatch):
         if no_spooled:
-            monkeypatch.setattr("werkzeug.formparser.SpooledTemporaryFile", None)
+            monkeypatch.setattr("werkzeug.formparser.SpooledTemporaryFile",
+                                None)
 
         data = b"a,b,c\n" * size
-        req = Request.from_values(
-            data={"foo": (io.BytesIO(data), "test.txt")}, method="POST"
-        )
+        req = Request.from_values(data={"foo": (io.BytesIO(data), "test.txt")},
+                                  method="POST")
         file_storage = req.files["foo"]
 
         try:
@@ -212,7 +200,8 @@ class TestMultiPart:
                 "---------------------------186454651713519341951581030105",
                 [
                     ("anchor.png", "file1", "image/png", "file1.png"),
-                    ("application_edit.png", "file2", "image/png", "file2.png"),
+                    ("application_edit.png", "file2", "image/png",
+                     "file2.png"),
                 ],
                 "example text",
             ),
@@ -230,7 +219,8 @@ class TestMultiPart:
                 "----------zEO9jQKmLc2Cq88c23Dx19",
                 [
                     ("arrow_branch.png", "file1", "image/png", "file1.png"),
-                    ("award_star_bronze_1.png", "file2", "image/png", "file2.png"),
+                    ("award_star_bronze_1.png", "file2", "image/png",
+                     "file2.png"),
                 ],
                 "blafasel öäü",
             ),
@@ -277,10 +267,12 @@ class TestMultiPart:
             )
             assert response.get_data() == repr(text).encode("utf-8")
 
-    @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+    @pytest.mark.filterwarnings(
+        "ignore::pytest.PytestUnraisableExceptionWarning")
     def test_ie7_unc_path(self):
         client = Client(form_data_consumer)
-        data_file = join(dirname(__file__), "multipart", "ie7_full_path_request.http")
+        data_file = join(dirname(__file__), "multipart",
+                         "ie7_full_path_request.http")
         data = get_contents(data_file)
         boundary = "---------------------------7da36d1b4a0164"
         response = client.post(
@@ -290,7 +282,8 @@ class TestMultiPart:
             content_length=len(data),
         )
         lines = response.get_data().split(b"\n", 3)
-        assert lines[0] == b"'Sellersburg Town Council Meeting 02-22-2010doc.doc'"
+        assert lines[
+            0] == b"'Sellersburg Town Council Meeting 02-22-2010doc.doc'"
 
     def test_end_of_file(self):
         # This test looks innocent but it was actually timeing out in
@@ -299,8 +292,7 @@ class TestMultiPart:
             b"--foo\r\n"
             b'Content-Disposition: form-data; name="test"; filename="test.txt"\r\n'
             b"Content-Type: text/plain\r\n\r\n"
-            b"file contents and no end"
-        )
+            b"file contents and no end")
         data = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),
@@ -314,8 +306,7 @@ class TestMultiPart:
         data = (
             b"--foo\r\n"
             b'Content-Disposition: form-data; name="test"; filename="test.txt"\r\n\r\n'
-            b"file contents\r\n--foo--"
-        )
+            b"file contents\r\n--foo--")
         data = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),
@@ -328,12 +319,10 @@ class TestMultiPart:
     def test_extra_newline(self):
         # this test looks innocent but it was actually timeing out in
         # the Werkzeug 0.5 release version (#394)
-        data = (
-            b"\r\n\r\n--foo\r\n"
-            b'Content-Disposition: form-data; name="foo"\r\n\r\n'
-            b"a string\r\n"
-            b"--foo--"
-        )
+        data = (b"\r\n\r\n--foo\r\n"
+                b'Content-Disposition: form-data; name="foo"\r\n\r\n'
+                b"a string\r\n"
+                b"--foo--")
         data = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),
@@ -350,8 +339,7 @@ class TestMultiPart:
             b"X-Custom-Header: blah\r\n"
             b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
             b"file contents, just the contents\r\n"
-            b"--foo--"
-        )
+            b"--foo--")
         req = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),
@@ -367,19 +355,17 @@ class TestMultiPart:
 
     @pytest.mark.parametrize("ending", [b"\n", b"\r", b"\r\n"])
     def test_nonstandard_line_endings(self, ending: bytes):
-        data = ending.join(
-            (
-                b"--foo",
-                b"Content-Disposition: form-data; name=foo",
-                b"",
-                b"this is just bar",
-                b"--foo",
-                b"Content-Disposition: form-data; name=bar",
-                b"",
-                b"blafasel",
-                b"--foo--",
-            )
-        )
+        data = ending.join((
+            b"--foo",
+            b"Content-Disposition: form-data; name=foo",
+            b"",
+            b"this is just bar",
+            b"--foo",
+            b"Content-Disposition: form-data; name=bar",
+            b"",
+            b"blafasel",
+            b"--foo--",
+        ))
         req = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),
@@ -395,12 +381,14 @@ class TestMultiPart:
             return parser.parse(stream, boundary, content_length)
 
         data = b"--foo\r\n\r\nHello World\r\n--foo--"
-        pytest.raises(ValueError, parse_multipart, io.BytesIO(data), b"foo", len(data))
+        pytest.raises(ValueError, parse_multipart, io.BytesIO(data), b"foo",
+                      len(data))
 
         data = (
             b"--foo\r\nContent-Disposition: form-field; name=foo\r\n\r\nHello World\r\n"
         )
-        pytest.raises(ValueError, parse_multipart, io.BytesIO(data), b"foo", len(data))
+        pytest.raises(ValueError, parse_multipart, io.BytesIO(data), b"foo",
+                      len(data))
 
     def test_empty_multipart(self):
         environ = {}
@@ -427,21 +415,20 @@ class TestMultiPartParser:
         def stream_factory():
             pass
 
-        parser = formparser.MultiPartParser(stream_factory=stream_factory, cls=dict)
+        parser = formparser.MultiPartParser(stream_factory=stream_factory,
+                                            cls=dict)
 
         assert parser.stream_factory is stream_factory
         assert parser.cls is dict
 
     def test_file_rfc2231_filename_continuations(self):
-        data = (
-            b"--foo\r\n"
-            b"Content-Type: text/plain; charset=utf-8\r\n"
-            b"Content-Disposition: form-data; name=rfc2231;\r\n"
-            b"	filename*0*=ascii''a%20b%20;\r\n"
-            b"	filename*1*=c%20d%20;\r\n"
-            b'	filename*2="e f.txt"\r\n\r\n'
-            b"file contents\r\n--foo--"
-        )
+        data = (b"--foo\r\n"
+                b"Content-Type: text/plain; charset=utf-8\r\n"
+                b"Content-Disposition: form-data; name=rfc2231;\r\n"
+                b"	filename*0*=ascii''a%20b%20;\r\n"
+                b"	filename*1*=c%20d%20;\r\n"
+                b'	filename*2="e f.txt"\r\n\r\n'
+                b"file contents\r\n--foo--")
         request = Request.from_values(
             input_stream=io.BytesIO(data),
             content_length=len(data),

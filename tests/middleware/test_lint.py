@@ -1,10 +1,7 @@
 import pytest
 
-from werkzeug.middleware.lint import HTTPWarning
-from werkzeug.middleware.lint import LintMiddleware
-from werkzeug.middleware.lint import WSGIWarning
-from werkzeug.test import create_environ
-from werkzeug.test import run_wsgi_app
+from werkzeug.middleware.lint import HTTPWarning, LintMiddleware, WSGIWarning
+from werkzeug.test import create_environ, run_wsgi_app
 
 
 def dummy_application(environ, start_response):
@@ -57,7 +54,8 @@ def test_lint_middleware_invalid_status():
 @pytest.mark.parametrize(
     "headers, message",
     [
-        (tuple([("Content-Type", "text/plain")]), "Header list is not a list."),
+        (tuple([("Content-Type", "text/plain")
+                ]), "Header list is not a list."),
         (["fo"], "Header items must be 2-item tuples."),
         ([("status", "foo")], "The status header is not supported."),
     ],
@@ -82,5 +80,6 @@ def test_lint_middleware_invalid_location():
     app = LintMiddleware(my_dummy_application)
 
     environ = create_environ("/test")
-    with pytest.warns(HTTPWarning, match="Absolute URLs required for location header."):
+    with pytest.warns(HTTPWarning,
+                      match="Absolute URLs required for location header."):
         run_wsgi_app(app, environ, buffered=True)

@@ -2,8 +2,7 @@ import os
 from contextlib import closing
 
 from werkzeug.middleware.shared_data import SharedDataMiddleware
-from werkzeug.test import create_environ
-from werkzeug.test import run_wsgi_app
+from werkzeug.test import create_environ, run_wsgi_app
 
 
 def test_get_file_loader():
@@ -24,14 +23,13 @@ def test_shared_data_middleware(tmpdir):
     for t in [list, dict]:
         app = SharedDataMiddleware(
             null_application,
-            t(
-                [
-                    ("/", os.path.join(os.path.dirname(__file__), "..", "res")),
-                    ("/sources", os.path.join(os.path.dirname(__file__), "..", "res")),
-                    ("/pkg", ("werkzeug.debug", "shared")),
-                    ("/foo", test_dir),
-                ]
-            ),
+            t([
+                ("/", os.path.join(os.path.dirname(__file__), "..", "res")),
+                ("/sources",
+                 os.path.join(os.path.dirname(__file__), "..", "res")),
+                ("/pkg", ("werkzeug.debug", "shared")),
+                ("/foo", test_dir),
+            ]),
         )
 
         for p in "/test.txt", "/sources/test.txt", "/foo/äöü":
@@ -39,7 +37,8 @@ def test_shared_data_middleware(tmpdir):
             assert status == "200 OK"
 
             if p.endswith(".txt"):
-                content_type = next(v for k, v in headers if k == "Content-Type")
+                content_type = next(v for k, v in headers
+                                    if k == "Content-Type")
                 assert content_type == "text/plain; charset=utf-8"
 
             with closing(app_iter) as app_iter:
@@ -48,8 +47,7 @@ def test_shared_data_middleware(tmpdir):
             assert data == b"FOUND"
 
         app_iter, status, headers = run_wsgi_app(
-            app, create_environ("/pkg/debugger.js")
-        )
+            app, create_environ("/pkg/debugger.js"))
 
         with closing(app_iter) as app_iter:
             contents = b"".join(app_iter)

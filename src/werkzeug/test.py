@@ -3,8 +3,7 @@ import sys
 import typing as t
 import warnings
 from collections import defaultdict
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from http.cookiejar import CookieJar
 from io import BytesIO
 from itertools import chain
@@ -13,41 +12,31 @@ from tempfile import TemporaryFile
 from time import time
 from urllib.request import Request as _UrllibRequest
 
-from ._internal import _get_environ
-from ._internal import _make_encode_wrapper
-from ._internal import _wsgi_decoding_dance
-from ._internal import _wsgi_encoding_dance
-from .datastructures import Authorization
-from .datastructures import CallbackDict
-from .datastructures import CombinedMultiDict
-from .datastructures import EnvironHeaders
-from .datastructures import FileMultiDict
-from .datastructures import Headers
-from .datastructures import MultiDict
-from .http import dump_cookie
-from .http import dump_options_header
-from .http import parse_options_header
-from .sansio.multipart import Data
-from .sansio.multipart import Epilogue
-from .sansio.multipart import Field
-from .sansio.multipart import File
-from .sansio.multipart import MultipartEncoder
-from .sansio.multipart import Preamble
-from .urls import iri_to_uri
-from .urls import url_encode
-from .urls import url_fix
-from .urls import url_parse
-from .urls import url_unparse
-from .urls import url_unquote
+from ._internal import (
+    _get_environ,
+    _make_encode_wrapper,
+    _wsgi_decoding_dance,
+    _wsgi_encoding_dance,
+)
+from .datastructures import (
+    Authorization,
+    CallbackDict,
+    CombinedMultiDict,
+    EnvironHeaders,
+    FileMultiDict,
+    Headers,
+    MultiDict,
+)
+from .http import dump_cookie, dump_options_header, parse_options_header
+from .sansio.multipart import Data, Epilogue, Field, File, MultipartEncoder, Preamble
+from .urls import iri_to_uri, url_encode, url_fix, url_parse, url_unparse, url_unquote
 from .utils import get_content_type
 from .wrappers.request import Request
 from .wrappers.response import Response
-from .wsgi import ClosingIterator
-from .wsgi import get_current_url
+from .wsgi import ClosingIterator, get_current_url
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import WSGIApplication, WSGIEnvironment
 
 
 def stream_encode_multipart(
@@ -101,34 +90,32 @@ def stream_encode_multipart(
             filename = getattr(value, "filename", getattr(value, "name", None))
             content_type = getattr(value, "content_type", None)
             if content_type is None:
-                content_type = (
-                    filename
-                    and mimetypes.guess_type(filename)[0]
-                    or "application/octet-stream"
-                )
+                content_type = (filename and mimetypes.guess_type(filename)[0] or
+                                "application/octet-stream")
             headers = Headers([("Content-Type", content_type)])
             if filename is None:
-                write_binary(encoder.send_event(Field(name=key, headers=headers)))
+                write_binary(
+                    encoder.send_event(Field(name=key, headers=headers)))
             else:
                 write_binary(
                     encoder.send_event(
-                        File(name=key, filename=filename, headers=headers)
-                    )
-                )
+                        File(name=key, filename=filename, headers=headers)))
             while True:
                 chunk = reader(16384)
 
                 if not chunk:
                     break
 
-                write_binary(encoder.send_event(Data(data=chunk, more_data=True)))
+                write_binary(
+                    encoder.send_event(Data(data=chunk, more_data=True)))
         else:
             if not isinstance(value, str):
                 value = str(value)
-            write_binary(encoder.send_event(Field(name=key, headers=Headers())))
+            write_binary(encoder.send_event(Field(name=key,
+                                                  headers=Headers())))
             write_binary(
-                encoder.send_event(Data(data=value.encode(charset), more_data=False))
-            )
+                encoder.send_event(
+                    Data(data=value.encode(charset), more_data=False)))
 
     write_binary(encoder.send_event(Epilogue(data=b"")))
 
@@ -145,16 +132,18 @@ def encode_multipart(
     """Like `stream_encode_multipart` but returns a tuple in the form
     (``boundary``, ``data``) where data is bytes.
     """
-    stream, length, boundary = stream_encode_multipart(
-        values, use_tempfile=False, boundary=boundary, charset=charset
-    )
+    stream, length, boundary = stream_encode_multipart(values,
+                                                       use_tempfile=False,
+                                                       boundary=boundary,
+                                                       charset=charset)
     return boundary, stream.read()
 
 
 class _TestCookieHeaders:
     """A headers adapter for cookielib"""
 
-    def __init__(self, headers: t.Union[Headers, t.List[t.Tuple[str, str]]]) -> None:
+    def __init__(self, headers: t.Union[Headers,
+                                        t.List[t.Tuple[str, str]]]) -> None:
         self.headers = headers
 
     def getheaders(self, name: str) -> t.Iterable[str]:
@@ -166,8 +155,9 @@ class _TestCookieHeaders:
         return headers
 
     def get_all(
-        self, name: str, default: t.Optional[t.Iterable[str]] = None
-    ) -> t.Iterable[str]:
+            self,
+            name: str,
+            default: t.Optional[t.Iterable[str]] = None) -> t.Iterable[str]:
         headers = self.getheaders(name)
 
         if not headers:
@@ -181,7 +171,8 @@ class _TestCookieResponse:
     adapter for our test responses to make them available for cookielib.
     """
 
-    def __init__(self, headers: t.Union[Headers, t.List[t.Tuple[str, str]]]) -> None:
+    def __init__(self, headers: t.Union[Headers,
+                                        t.List[t.Tuple[str, str]]]) -> None:
         self.headers = _TestCookieHeaders(headers)
 
     def info(self) -> _TestCookieHeaders:
@@ -364,10 +355,10 @@ class EnvironBuilder:
         multithread: bool = False,
         multiprocess: bool = False,
         run_once: bool = False,
-        headers: t.Optional[t.Union[Headers, t.Iterable[t.Tuple[str, str]]]] = None,
-        data: t.Optional[
-            t.Union[t.IO[bytes], str, bytes, t.Mapping[str, t.Any]]
-        ] = None,
+        headers: t.Optional[t.Union[Headers, t.Iterable[t.Tuple[str,
+                                                                str]]]] = None,
+        data: t.Optional[t.Union[t.IO[bytes], str, bytes,
+                                 t.Mapping[str, t.Any]]] = None,
         environ_base: t.Optional[t.Mapping[str, t.Any]] = None,
         environ_overrides: t.Optional[t.Mapping[str, t.Any]] = None,
         charset: str = "utf-8",
@@ -377,7 +368,8 @@ class EnvironBuilder:
     ) -> None:
         path_s = _make_encode_wrapper(path)
         if query_string is not None and path_s("?") in path:
-            raise ValueError("Query string is defined in the path and as an argument")
+            raise ValueError(
+                "Query string is defined in the path and as an argument")
         request_uri = url_parse(path)
         if query_string is None and path_s("?") in path:
             query_string = request_uri.query
@@ -417,9 +409,10 @@ class EnvironBuilder:
 
         if auth is not None:
             if isinstance(auth, tuple):
-                auth = Authorization(
-                    "basic", {"username": auth[0], "password": auth[1]}
-                )
+                auth = Authorization("basic", {
+                    "username": auth[0],
+                    "password": auth[1]
+                })
 
             self.headers.set("Authorization", auth.to_header())
 
@@ -445,7 +438,8 @@ class EnvironBuilder:
                     self.content_length = len(data)
             else:
                 for key, value in _iter_data(data):  # type: ignore
-                    if isinstance(value, (tuple, dict)) or hasattr(value, "read"):
+                    if isinstance(value,
+                                  (tuple, dict)) or hasattr(value, "read"):
                         self._add_file_from_data(key, value)
                     else:
                         self.form.setlistdefault(key).append(value)
@@ -454,9 +448,8 @@ class EnvironBuilder:
             self.mimetype = mimetype
 
     @classmethod
-    def from_environ(
-        cls, environ: "WSGIEnvironment", **kwargs: t.Any
-    ) -> "EnvironBuilder":
+    def from_environ(cls, environ: "WSGIEnvironment",
+                     **kwargs: t.Any) -> "EnvironBuilder":
         """Turn an environ dict back into a builder. Any extra kwargs
         override the args extracted from the environ.
 
@@ -468,22 +461,34 @@ class EnvironBuilder:
         """
         headers = Headers(EnvironHeaders(environ))
         out = {
-            "path": _wsgi_decoding_dance(environ["PATH_INFO"]),
-            "base_url": cls._make_base_url(
+            "path":
+            _wsgi_decoding_dance(environ["PATH_INFO"]),
+            "base_url":
+            cls._make_base_url(
                 environ["wsgi.url_scheme"],
                 headers.pop("Host"),
                 _wsgi_decoding_dance(environ["SCRIPT_NAME"]),
             ),
-            "query_string": _wsgi_decoding_dance(environ["QUERY_STRING"]),
-            "method": environ["REQUEST_METHOD"],
-            "input_stream": environ["wsgi.input"],
-            "content_type": headers.pop("Content-Type", None),
-            "content_length": headers.pop("Content-Length", None),
-            "errors_stream": environ["wsgi.errors"],
-            "multithread": environ["wsgi.multithread"],
-            "multiprocess": environ["wsgi.multiprocess"],
-            "run_once": environ["wsgi.run_once"],
-            "headers": headers,
+            "query_string":
+            _wsgi_decoding_dance(environ["QUERY_STRING"]),
+            "method":
+            environ["REQUEST_METHOD"],
+            "input_stream":
+            environ["wsgi.input"],
+            "content_type":
+            headers.pop("Content-Type", None),
+            "content_length":
+            headers.pop("Content-Length", None),
+            "errors_stream":
+            environ["wsgi.errors"],
+            "multithread":
+            environ["wsgi.multithread"],
+            "multiprocess":
+            environ["wsgi.multiprocess"],
+            "run_once":
+            environ["wsgi.run_once"],
+            "headers":
+            headers,
         }
         out.update(kwargs)
         return cls(**out)
@@ -491,9 +496,8 @@ class EnvironBuilder:
     def _add_file_from_data(
         self,
         key: str,
-        value: t.Union[
-            t.IO[bytes], t.Tuple[t.IO[bytes], str], t.Tuple[t.IO[bytes], str, str]
-        ],
+        value: t.Union[t.IO[bytes], t.Tuple[t.IO[bytes], str],
+                       t.Tuple[t.IO[bytes], str, str]],
     ) -> None:
         """Called in the EnvironBuilder to add files from the data dict."""
         if isinstance(value, tuple):
@@ -503,14 +507,16 @@ class EnvironBuilder:
 
     @staticmethod
     def _make_base_url(scheme: str, host: str, script_root: str) -> str:
-        return url_unparse((scheme, host, script_root, "", "")).rstrip("/") + "/"
+        return url_unparse(
+            (scheme, host, script_root, "", "")).rstrip("/") + "/"
 
     @property
     def base_url(self) -> str:
         """The base URL is used to extract the URL scheme, host name,
         port, and root path.
         """
-        return self._make_base_url(self.url_scheme, self.host, self.script_root)
+        return self._make_base_url(self.url_scheme, self.host,
+                                   self.script_root)
 
     @base_url.setter
     def base_url(self, value: t.Optional[str]) -> None:
@@ -521,7 +527,8 @@ class EnvironBuilder:
         else:
             scheme, netloc, script_root, qs, anchor = url_parse(value)
             if qs or anchor:
-                raise ValueError("base url must not contain a query string or fragment")
+                raise ValueError(
+                    "base url must not contain a query string or fragment")
         self.script_root = script_root.rstrip("/")
         self.host = netloc
         self.url_scheme = scheme
@@ -569,9 +576,9 @@ class EnvironBuilder:
 
         .. versionadded:: 0.14
         """
-
         def on_update(d: t.Mapping[str, str]) -> None:
-            self.headers["Content-Type"] = dump_options_header(self.mimetype, d)
+            self.headers["Content-Type"] = dump_options_header(
+                self.mimetype, d)
 
         d = parse_options_header(self.headers.get("content-type", ""))[1]
         return CallbackDict(d, on_update)
@@ -591,7 +598,8 @@ class EnvironBuilder:
         else:
             self.headers["Content-Length"] = str(value)
 
-    def _get_form(self, name: str, storage: t.Type[_TAnyMultiDict]) -> _TAnyMultiDict:
+    def _get_form(self, name: str,
+                  storage: t.Type[_TAnyMultiDict]) -> _TAnyMultiDict:
         """Common behavior for getting the :attr:`form` and
         :attr:`files` properties.
 
@@ -745,11 +753,12 @@ class EnvironBuilder:
             content_length = end_pos - start_pos
         elif mimetype == "multipart/form-data":
             input_stream, content_length, boundary = stream_encode_multipart(
-                CombinedMultiDict([self.form, self.files]), charset=self.charset
-            )
+                CombinedMultiDict([self.form, self.files]),
+                charset=self.charset)
             content_type = f'{mimetype}; boundary="{boundary}"'
         elif mimetype == "application/x-www-form-urlencoded":
-            form_encoded = url_encode(self.form, charset=self.charset).encode("ascii")
+            form_encoded = url_encode(self.form,
+                                      charset=self.charset).encode("ascii")
             content_length = len(form_encoded)
             input_stream = BytesIO(form_encoded)
         else:
@@ -760,32 +769,48 @@ class EnvironBuilder:
             result.update(self.environ_base)
 
         def _path_encode(x: str) -> str:
-            return _wsgi_encoding_dance(url_unquote(x, self.charset), self.charset)
+            return _wsgi_encoding_dance(url_unquote(x, self.charset),
+                                        self.charset)
 
         raw_uri = _wsgi_encoding_dance(self.request_uri, self.charset)
-        result.update(
-            {
-                "REQUEST_METHOD": self.method,
-                "SCRIPT_NAME": _path_encode(self.script_root),
-                "PATH_INFO": _path_encode(self.path),
-                "QUERY_STRING": _wsgi_encoding_dance(self.query_string, self.charset),
-                # Non-standard, added by mod_wsgi, uWSGI
-                "REQUEST_URI": raw_uri,
-                # Non-standard, added by gunicorn
-                "RAW_URI": raw_uri,
-                "SERVER_NAME": self.server_name,
-                "SERVER_PORT": str(self.server_port),
-                "HTTP_HOST": self.host,
-                "SERVER_PROTOCOL": self.server_protocol,
-                "wsgi.version": self.wsgi_version,
-                "wsgi.url_scheme": self.url_scheme,
-                "wsgi.input": input_stream,
-                "wsgi.errors": self.errors_stream,
-                "wsgi.multithread": self.multithread,
-                "wsgi.multiprocess": self.multiprocess,
-                "wsgi.run_once": self.run_once,
-            }
-        )
+        result.update({
+            "REQUEST_METHOD":
+            self.method,
+            "SCRIPT_NAME":
+            _path_encode(self.script_root),
+            "PATH_INFO":
+            _path_encode(self.path),
+            "QUERY_STRING":
+            _wsgi_encoding_dance(self.query_string, self.charset),
+            # Non-standard, added by mod_wsgi, uWSGI
+            "REQUEST_URI":
+            raw_uri,
+            # Non-standard, added by gunicorn
+            "RAW_URI":
+            raw_uri,
+            "SERVER_NAME":
+            self.server_name,
+            "SERVER_PORT":
+            str(self.server_port),
+            "HTTP_HOST":
+            self.host,
+            "SERVER_PROTOCOL":
+            self.server_protocol,
+            "wsgi.version":
+            self.wsgi_version,
+            "wsgi.url_scheme":
+            self.url_scheme,
+            "wsgi.input":
+            input_stream,
+            "wsgi.errors":
+            self.errors_stream,
+            "wsgi.multithread":
+            self.multithread,
+            "wsgi.multiprocess":
+            self.multiprocess,
+            "wsgi.run_once":
+            self.run_once,
+        })
 
         headers = self.headers.copy()
 
@@ -800,7 +825,8 @@ class EnvironBuilder:
         combined_headers = defaultdict(list)
 
         for key, value in headers.to_wsgi_list():
-            combined_headers[f"HTTP_{key.upper().replace('-', '_')}"].append(value)
+            combined_headers[f"HTTP_{key.upper().replace('-', '_')}"].append(
+                value)
 
         for key, values in combined_headers.items():
             result[key] = ", ".join(values)
@@ -865,7 +891,8 @@ class Client:
                 {},
             )
 
-        self.response_wrapper = t.cast(t.Type["TestResponse"], response_wrapper)
+        self.response_wrapper = t.cast(t.Type["TestResponse"],
+                                       response_wrapper)
 
         if use_cookies:
             self.cookie_jar: t.Optional[_TestCookieJar] = _TestCookieJar()
@@ -933,7 +960,9 @@ class Client:
         )
 
     def run_wsgi_app(
-        self, environ: "WSGIEnvironment", buffered: bool = False
+            self,
+            environ: "WSGIEnvironment",
+            buffered: bool = False
     ) -> t.Tuple[t.Iterable[bytes], str, Headers]:
         """Runs the wrapped WSGI app with the given environment.
 
@@ -949,16 +978,17 @@ class Client:
 
         return rv
 
-    def resolve_redirect(
-        self, response: "TestResponse", buffered: bool = False
-    ) -> "TestResponse":
+    def resolve_redirect(self,
+                         response: "TestResponse",
+                         buffered: bool = False) -> "TestResponse":
         """Perform a new request to the location given by the redirect
         response to the previous request.
 
         :meta private:
         """
         scheme, netloc, path, qs, anchor = url_parse(response.location)
-        builder = EnvironBuilder.from_environ(response.request.environ, query_string=qs)
+        builder = EnvironBuilder.from_environ(response.request.environ,
+                                              query_string=qs)
 
         to_name_parts = netloc.split(":", 1)[0].split(".")
         from_name_parts = builder.server_name.split(".")
@@ -974,18 +1004,20 @@ class Client:
 
         # Explain why a redirect to a different server name won't be followed.
         if to_name_parts != from_name_parts:
-            if to_name_parts[-len(from_name_parts) :] == from_name_parts:
+            if to_name_parts[-len(from_name_parts):] == from_name_parts:
                 if not self.allow_subdomain_redirects:
-                    raise RuntimeError("Following subdomain redirects is not enabled.")
+                    raise RuntimeError(
+                        "Following subdomain redirects is not enabled.")
             else:
-                raise RuntimeError("Following external redirects is not supported.")
+                raise RuntimeError(
+                    "Following external redirects is not supported.")
 
         path_parts = path.split("/")
         root_parts = builder.script_root.split("/")
 
-        if path_parts[: len(root_parts)] == root_parts:
+        if path_parts[:len(root_parts)] == root_parts:
             # Strip the script root from the path.
-            builder.path = path[len(builder.script_root) :]
+            builder.path = path[len(builder.script_root):]
         else:
             # The new location is not under the script root, so use the
             # whole path and clear the previous root.
@@ -1078,12 +1110,12 @@ class Client:
         history: t.List["TestResponse"] = []
 
         while follow_redirects and response.status_code in {
-            301,
-            302,
-            303,
-            305,
-            307,
-            308,
+                301,
+                302,
+                303,
+                305,
+                307,
+                308,
         }:
             # Exhaust intermediate response bodies to ensure middleware
             # that returns an iterator runs any cleanup code.
@@ -1096,8 +1128,7 @@ class Client:
             if new_redirect_entry in redirects:
                 raise ClientRedirectError(
                     f"Loop detected: A {response.status_code} redirect"
-                    f" to {response.location} was already made."
-                )
+                    f" to {response.location} was already made.")
 
             redirects.add(new_redirect_entry)
             response.history = tuple(history)
@@ -1191,8 +1222,9 @@ def create_environ(*args: t.Any, **kwargs: t.Any) -> "WSGIEnvironment":
 
 
 def run_wsgi_app(
-    app: "WSGIApplication", environ: "WSGIEnvironment", buffered: bool = False
-) -> t.Tuple[t.Iterable[bytes], str, Headers]:
+        app: "WSGIApplication",
+        environ: "WSGIEnvironment",
+        buffered: bool = False) -> t.Tuple[t.Iterable[bytes], str, Headers]:
     """Return a tuple in the form (app_iter, status, headers) of the
     application output.  This works best if you pass it an application that
     returns an iterator all the time.
@@ -1301,12 +1333,10 @@ class TestResponse(Response):
 
     def __iter__(self) -> t.Iterator:
         warnings.warn(
-            (
-                "The test client no longer returns a tuple, it returns"
-                " a 'TestResponse'. Tuple unpacking is deprecated and"
-                " will be removed in Werkzeug 2.1. Access the"
-                " attributes 'data', 'status', and 'headers' instead."
-            ),
+            ("The test client no longer returns a tuple, it returns"
+             " a 'TestResponse'. Tuple unpacking is deprecated and"
+             " will be removed in Werkzeug 2.1. Access the"
+             " attributes 'data', 'status', and 'headers' instead."),
             DeprecationWarning,
             stacklevel=2,
         )
@@ -1314,12 +1344,10 @@ class TestResponse(Response):
 
     def __getitem__(self, item: int) -> t.Any:
         warnings.warn(
-            (
-                "The test client no longer returns a tuple, it returns"
-                " a 'TestResponse'. Item indexing is deprecated and"
-                " will be removed in Werkzeug 2.1. Access the"
-                " attributes 'data', 'status', and 'headers' instead."
-            ),
+            ("The test client no longer returns a tuple, it returns"
+             " a 'TestResponse'. Item indexing is deprecated and"
+             " will be removed in Werkzeug 2.1. Access the"
+             " attributes 'data', 'status', and 'headers' instead."),
             DeprecationWarning,
             stacklevel=2,
         )

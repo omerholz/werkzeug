@@ -7,8 +7,7 @@ import pytest
 from werkzeug.exceptions import NotFound
 from werkzeug.http import http_date
 from werkzeug.test import EnvironBuilder
-from werkzeug.utils import send_file
-from werkzeug.utils import send_from_directory
+from werkzeug.utils import send_file, send_from_directory
 
 res_path = pathlib.Path(__file__).parent / "res"
 html_path = res_path / "index.html"
@@ -42,10 +41,12 @@ def test_last_modified():
 
 
 @pytest.mark.parametrize(
-    "file_factory", [lambda: txt_path.open("rb"), lambda: io.BytesIO(b"test")]
-)
+    "file_factory", [lambda: txt_path.open("rb"), lambda: io.BytesIO(b"test")])
 def test_object(file_factory):
-    rv = send_file(file_factory(), environ, mimetype="text/plain", use_x_sendfile=True)
+    rv = send_file(file_factory(),
+                   environ,
+                   mimetype="text/plain",
+                   use_x_sendfile=True)
     rv.direct_passthrough = False
     assert rv.data
     assert rv.mimetype == "text/plain"
@@ -65,16 +66,14 @@ def test_object_mimetype_from_name():
 
 
 @pytest.mark.parametrize(
-    "file_factory", [lambda: txt_path.open(), lambda: io.StringIO("test")]
-)
+    "file_factory", [lambda: txt_path.open(), lambda: io.StringIO("test")])
 def test_text_mode_fails(file_factory):
     with file_factory() as f, pytest.raises(ValueError, match="binary mode"):
         send_file(f, environ, mimetype="text/plain")
 
 
-@pytest.mark.parametrize(
-    ("as_attachment", "value"), [(False, "inline"), (True, "attachment")]
-)
+@pytest.mark.parametrize(("as_attachment", "value"), [(False, "inline"),
+                                                      (True, "attachment")])
 def test_disposition_name(as_attachment, value):
     rv = send_file(txt_path, environ, as_attachment=as_attachment)
     assert rv.headers["Content-Disposition"] == f"{value}; filename=test.txt"
@@ -83,13 +82,15 @@ def test_disposition_name(as_attachment, value):
 
 def test_object_attachment_requires_name():
     with pytest.raises(TypeError, match="attachment"):
-        send_file(
-            io.BytesIO(b"test"), environ, mimetype="text/plain", as_attachment=True
-        )
+        send_file(io.BytesIO(b"test"),
+                  environ,
+                  mimetype="text/plain",
+                  as_attachment=True)
 
-    rv = send_file(
-        io.BytesIO(b"test"), environ, as_attachment=True, download_name="test.txt"
-    )
+    rv = send_file(io.BytesIO(b"test"),
+                   environ,
+                   as_attachment=True,
+                   download_name="test.txt")
     assert rv.headers["Content-Disposition"] == "attachment; filename=test.txt"
     rv.close()
 
@@ -125,8 +126,9 @@ def test_no_cache_conditional_default():
     rv = send_file(
         txt_path,
         EnvironBuilder(
-            headers={"If-Modified-Since": http_date(datetime.datetime(2020, 7, 12))}
-        ).get_environ(),
+            headers={
+                "If-Modified-Since": http_date(datetime.datetime(2020, 7, 12))
+            }).get_environ(),
         last_modified=datetime.datetime(2020, 7, 11),
     )
     rv.close()
@@ -162,9 +164,10 @@ def test_etag():
 
 @pytest.mark.parametrize("as_attachment", (True, False))
 def test_content_encoding(as_attachment):
-    rv = send_file(
-        txt_path, environ, download_name="logo.svgz", as_attachment=as_attachment
-    )
+    rv = send_file(txt_path,
+                   environ,
+                   download_name="logo.svgz",
+                   as_attachment=as_attachment)
     rv.close()
     assert rv.mimetype == "image/svg+xml"
     assert rv.content_encoding == ("gzip" if not as_attachment else None)
@@ -181,7 +184,8 @@ def test_from_directory(directory, path):
     rv.close()
 
 
-@pytest.mark.parametrize("path", ["../res/test.txt", "nothing.txt", "null\x00.txt"])
+@pytest.mark.parametrize("path",
+                         ["../res/test.txt", "nothing.txt", "null\x00.txt"])
 def test_from_directory_not_found(path):
     with pytest.raises(NotFound):
         send_from_directory(res_path, path, environ)

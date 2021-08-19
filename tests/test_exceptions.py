@@ -3,8 +3,7 @@ from datetime import datetime
 import pytest
 
 from werkzeug import exceptions
-from werkzeug.datastructures import Headers
-from werkzeug.datastructures import WWWAuthenticate
+from werkzeug.datastructures import Headers, WWWAuthenticate
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response
 
@@ -66,8 +65,7 @@ def test_exception_repr():
     assert str(exc) == (
         "404 Not Found: The requested URL was not found on the server."
         " If you entered the URL manually please check your spelling"
-        " and try again."
-    )
+        " and try again.")
     assert repr(exc) == "<NotFound '404: Not Found'>"
 
     exc = exceptions.NotFound("Not There")
@@ -131,7 +129,8 @@ def test_retry_after_mixin(cls, value, expect):
 @pytest.mark.parametrize(
     "cls",
     sorted(
-        (e for e in HTTPException.__subclasses__() if e.code and e.code >= 400),
+        (e
+         for e in HTTPException.__subclasses__() if e.code and e.code >= 400),
         key=lambda e: e.code,  # type: ignore
     ),
 )

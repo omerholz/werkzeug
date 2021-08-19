@@ -58,7 +58,8 @@ class _Helper:
 
     def __call__(self, topic: t.Optional[t.Any] = None) -> None:
         if topic is None:
-            sys.stdout._write(f"<span class=help>{self!r}</span>")  # type: ignore
+            sys.stdout._write(
+                f"<span class=help>{self!r}</span>")  # type: ignore
             return
         import pydoc
 
@@ -73,15 +74,17 @@ class _Helper:
         else:
             title = "Help"
             text = paragraphs[0]
-        sys.stdout._write(HELP_HTML % {"title": title, "text": text})  # type: ignore
+        sys.stdout._write(HELP_HTML % {
+            "title": title,
+            "text": text
+        })  # type: ignore
 
 
 helper = _Helper()
 
 
-def _add_subclass_info(
-    inner: str, obj: object, base: t.Union[t.Type, t.Tuple[t.Type, ...]]
-) -> str:
+def _add_subclass_info(inner: str, obj: object,
+                       base: t.Union[t.Type, t.Tuple[t.Type, ...]]) -> str:
     if isinstance(base, tuple):
         for base in base:
             if type(obj) is base:
@@ -95,9 +98,13 @@ def _add_subclass_info(
 
 
 def _sequence_repr_maker(
-    left: str, right: str, base: t.Type, limit: int = 8
+    left: str,
+    right: str,
+    base: t.Type,
+    limit: int = 8
 ) -> t.Callable[["DebugReprGenerator", t.Iterable, bool], str]:
-    def proxy(self: "DebugReprGenerator", obj: t.Iterable, recursive: bool) -> str:
+    def proxy(self: "DebugReprGenerator", obj: t.Iterable,
+              recursive: bool) -> str:
         if recursive:
             return _add_subclass_info(f"{left}...{right}", obj, base)
         buf = [left]
@@ -126,12 +133,12 @@ class DebugReprGenerator:
     set_repr = _sequence_repr_maker("set([", "])", set)
     frozenset_repr = _sequence_repr_maker("frozenset([", "])", frozenset)
     deque_repr = _sequence_repr_maker(
-        '<span class="module">collections.</span>deque([', "])", deque
-    )
+        '<span class="module">collections.</span>deque([', "])", deque)
 
     def regex_repr(self, obj: t.Pattern) -> str:
         pattern = repr(obj.pattern)
-        pattern = codecs.decode(pattern, "unicode-escape", "ignore")  # type: ignore
+        pattern = codecs.decode(pattern, "unicode-escape",
+                                "ignore")  # type: ignore
         pattern = f"r{pattern}"
         return f're.compile(<span class="string regex">{pattern}</span>)'
 
@@ -141,14 +148,12 @@ class DebugReprGenerator:
 
         # shorten the repr when the hidden part would be at least 3 chars
         if len(r) - limit > 2:
-            buf.extend(
-                (
-                    escape(r[:limit]),
-                    '<span class="extended">',
-                    escape(r[limit:]),
-                    "</span>",
-                )
-            )
+            buf.extend((
+                escape(r[:limit]),
+                '<span class="extended">',
+                escape(r[limit:]),
+                "</span>",
+            ))
         else:
             buf.append(escape(r))
 
@@ -164,7 +169,8 @@ class DebugReprGenerator:
 
     def dict_repr(
         self,
-        d: t.Union[t.Dict[int, None], t.Dict[str, int], t.Dict[t.Union[str, int], int]],
+        d: t.Union[t.Dict[int, None], t.Dict[str, int],
+                   t.Dict[t.Union[str, int], int]],
         recursive: bool,
         limit: int = 5,
     ) -> str:
@@ -180,16 +186,15 @@ class DebugReprGenerator:
                 have_extended_section = True
             buf.append(
                 f'<span class="pair"><span class="key">{self.repr(key)}</span>:'
-                f' <span class="value">{self.repr(value)}</span></span>'
-            )
+                f' <span class="value">{self.repr(value)}</span></span>')
         if have_extended_section:
             buf.append("</span>")
         buf.append("}")
         return _add_subclass_info("".join(buf), d, dict)
 
     def object_repr(
-        self, obj: t.Optional[t.Union[t.Type[dict], t.Callable, t.Type[list]]]
-    ) -> str:
+        self, obj: t.Optional[t.Union[t.Type[dict], t.Callable,
+                                      t.Type[list]]]) -> str:
         r = repr(obj)
         return f'<span class="object">{escape(r)}</span>'
 
@@ -221,10 +226,8 @@ class DebugReprGenerator:
             info = "".join(format_exception_only(*sys.exc_info()[:2]))
         except Exception:
             info = "?"
-        return (
-            '<span class="brokenrepr">'
-            f"&lt;broken repr ({escape(info.strip())})&gt;</span>"
-        )
+        return ('<span class="brokenrepr">'
+                f"&lt;broken repr ({escape(info.strip())})&gt;</span>")
 
     def repr(self, obj: object) -> str:
         recursive = False
@@ -269,12 +272,14 @@ class DebugReprGenerator:
         items = [(key, self.repr(value)) for key, value in d.items()]
         return self.render_object_dump(items, "Local variables in frame")
 
-    def render_object_dump(
-        self, items: t.List[t.Tuple[str, str]], title: str, repr: t.Optional[str] = None
-    ) -> str:
+    def render_object_dump(self,
+                           items: t.List[t.Tuple[str, str]],
+                           title: str,
+                           repr: t.Optional[str] = None) -> str:
         html_items = []
         for key, value in items:
-            html_items.append(f"<tr><th>{escape(key)}<td><pre class=repr>{value}</pre>")
+            html_items.append(
+                f"<tr><th>{escape(key)}<td><pre class=repr>{value}</pre>")
         if not html_items:
             html_items.append("<tr><td><em>Nothing</em>")
         return OBJECT_DUMP_HTML % {

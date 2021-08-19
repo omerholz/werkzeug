@@ -4,25 +4,24 @@ import re
 import typing
 import typing as t
 import warnings
-from datetime import date
-from datetime import datetime
-from datetime import time
-from datetime import timedelta
-from datetime import timezone
+from datetime import date, datetime, time, timedelta, timezone
 from enum import Enum
 from hashlib import sha1
-from time import mktime
-from time import struct_time
+from time import mktime, struct_time
 from urllib.parse import unquote_to_bytes as _unquote
 from urllib.request import parse_http_list as _parse_list_header
 
-from ._internal import _cookie_parse_impl
-from ._internal import _cookie_quote
-from ._internal import _make_cookie_domain
-from ._internal import _to_bytes
-from ._internal import _to_str
-from ._internal import _wsgi_decoding_dance
 from werkzeug._internal import _dt_as_utc
+
+from . import datastructures as ds
+from ._internal import (
+    _cookie_parse_impl,
+    _cookie_quote,
+    _make_cookie_domain,
+    _to_bytes,
+    _to_str,
+    _wsgi_decoding_dance,
+)
 
 if t.TYPE_CHECKING:
     import typing_extensions as te
@@ -83,32 +82,28 @@ _option_header_piece_re = re.compile(
     flags=re.VERBOSE,
 )
 _option_header_start_mime_type = re.compile(r",\s*([^;,\s]+)([;,]\s*.+)?")
-_entity_headers = frozenset(
-    [
-        "allow",
-        "content-encoding",
-        "content-language",
-        "content-length",
-        "content-location",
-        "content-md5",
-        "content-range",
-        "content-type",
-        "expires",
-        "last-modified",
-    ]
-)
-_hop_by_hop_headers = frozenset(
-    [
-        "connection",
-        "keep-alive",
-        "proxy-authenticate",
-        "proxy-authorization",
-        "te",
-        "trailer",
-        "transfer-encoding",
-        "upgrade",
-    ]
-)
+_entity_headers = frozenset([
+    "allow",
+    "content-encoding",
+    "content-language",
+    "content-length",
+    "content-location",
+    "content-md5",
+    "content-range",
+    "content-type",
+    "expires",
+    "last-modified",
+])
+_hop_by_hop_headers = frozenset([
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+])
 HTTP_STATUS_CODES = {
     100: "Continue",
     101: "Switching Protocols",
@@ -192,9 +187,9 @@ class COOP(Enum):
     SAME_ORIGIN = "same-origin"
 
 
-def quote_header_value(
-    value: t.Union[str, int], extra_chars: str = "", allow_token: bool = True
-) -> str:
+def quote_header_value(value: t.Union[str, int],
+                       extra_chars: str = "",
+                       allow_token: bool = True) -> str:
     """Quote a header value if necessary.
 
     .. versionadded:: 0.5
@@ -243,8 +238,8 @@ def unquote_header_value(value: str, is_filename: bool = False) -> str:
 
 
 def dump_options_header(
-    header: t.Optional[str], options: t.Mapping[str, t.Optional[t.Union[str, int]]]
-) -> str:
+        header: t.Optional[str],
+        options: t.Mapping[str, t.Optional[t.Union[str, int]]]) -> str:
     """The reverse function to :func:`parse_options_header`.
 
     :param header: the header to dump
@@ -289,7 +284,9 @@ def dump_header(
                     f"{key}={quote_header_value(value, allow_token=allow_token)}"
                 )
     else:
-        items = [quote_header_value(x, allow_token=allow_token) for x in iterable]
+        items = [
+            quote_header_value(x, allow_token=allow_token) for x in iterable
+        ]
     return ", ".join(items)
 
 
@@ -336,7 +333,8 @@ def parse_list_header(value: str) -> t.List[str]:
     return result
 
 
-def parse_dict_header(value: str, cls: t.Type[dict] = dict) -> t.Dict[str, str]:
+def parse_dict_header(value: str,
+                      cls: t.Type[dict] = dict) -> t.Dict[str, str]:
     """Parse lists of key, value pairs as described by RFC 2068 Section 2 and
     convert them into a python dict (or any other mapping object created from
     the type with a dict like interface provided by the `cls` argument):
@@ -378,20 +376,21 @@ def parse_dict_header(value: str, cls: t.Type[dict] = dict) -> t.Dict[str, str]:
 
 @typing.overload
 def parse_options_header(
-    value: t.Optional[str], multiple: "te.Literal[False]" = False
+        value: t.Optional[str],
+        multiple: "te.Literal[False]" = False
 ) -> t.Tuple[str, t.Dict[str, str]]:
     ...
 
 
 @typing.overload
-def parse_options_header(
-    value: t.Optional[str], multiple: "te.Literal[True]"
-) -> t.Tuple[t.Any, ...]:
+def parse_options_header(value: t.Optional[str],
+                         multiple: "te.Literal[True]") -> t.Tuple[t.Any, ...]:
     ...
 
 
 def parse_options_header(
-    value: t.Optional[str], multiple: bool = False
+    value: t.Optional[str],
+    multiple: bool = False
 ) -> t.Union[t.Tuple[str, t.Dict[str, str]], t.Tuple[t.Any, ...]]:
     """Parse a ``Content-Type`` like header into a tuple with the content
     type and the options:
@@ -446,7 +445,8 @@ def parse_options_header(
                 continued_encoding = encoding
             option = unquote_header_value(option)
             if option_value is not None:
-                option_value = unquote_header_value(option_value, option == "filename")
+                option_value = unquote_header_value(option_value,
+                                                    option == "filename")
                 if encoding is not None:
                     option_value = _unquote(option_value).decode(encoding)
             if count:
@@ -456,7 +456,7 @@ def parse_options_header(
                 options[option] = options.get(option, "") + option_value
             else:
                 options[option] = option_value
-            rest = rest[optmatch.end() :]
+            rest = rest[optmatch.end():]
         result.append(options)
         if multiple is False:
             return tuple(result)
@@ -474,15 +474,14 @@ def parse_accept_header(value: t.Optional[str]) -> "ds.Accept":
 
 
 @typing.overload
-def parse_accept_header(
-    value: t.Optional[str], cls: t.Type[_TAnyAccept]
-) -> _TAnyAccept:
+def parse_accept_header(value: t.Optional[str],
+                        cls: t.Type[_TAnyAccept]) -> _TAnyAccept:
     ...
 
 
 def parse_accept_header(
-    value: t.Optional[str], cls: t.Optional[t.Type[_TAnyAccept]] = None
-) -> _TAnyAccept:
+        value: t.Optional[str],
+        cls: t.Optional[t.Type[_TAnyAccept]] = None) -> _TAnyAccept:
     """Parses an HTTP Accept-* header.  This does not implement a complete
     valid algorithm but one that supports at least value and quality
     extraction.
@@ -520,16 +519,15 @@ _t_cc_update = t.Optional[t.Callable[[_TAnyCC], None]]
 
 
 @typing.overload
-def parse_cache_control_header(
-    value: t.Optional[str], on_update: _t_cc_update, cls: None = None
-) -> "ds.RequestCacheControl":
+def parse_cache_control_header(value: t.Optional[str],
+                               on_update: _t_cc_update,
+                               cls: None = None) -> "ds.RequestCacheControl":
     ...
 
 
 @typing.overload
-def parse_cache_control_header(
-    value: t.Optional[str], on_update: _t_cc_update, cls: t.Type[_TAnyCC]
-) -> _TAnyCC:
+def parse_cache_control_header(value: t.Optional[str], on_update: _t_cc_update,
+                               cls: t.Type[_TAnyCC]) -> _TAnyCC:
     ...
 
 
@@ -568,16 +566,15 @@ _t_csp_update = t.Optional[t.Callable[[_TAnyCSP], None]]
 
 
 @typing.overload
-def parse_csp_header(
-    value: t.Optional[str], on_update: _t_csp_update, cls: None = None
-) -> "ds.ContentSecurityPolicy":
+def parse_csp_header(value: t.Optional[str],
+                     on_update: _t_csp_update,
+                     cls: None = None) -> "ds.ContentSecurityPolicy":
     ...
 
 
 @typing.overload
-def parse_csp_header(
-    value: t.Optional[str], on_update: _t_csp_update, cls: t.Type[_TAnyCSP]
-) -> _TAnyCSP:
+def parse_csp_header(value: t.Optional[str], on_update: _t_csp_update,
+                     cls: t.Type[_TAnyCSP]) -> _TAnyCSP:
     ...
 
 
@@ -651,8 +648,7 @@ def parse_set_header(
 
 
 def parse_authorization_header(
-    value: t.Optional[str],
-) -> t.Optional["ds.Authorization"]:
+        value: t.Optional[str], ) -> t.Optional["ds.Authorization"]:
     """Parse an HTTP basic/digest authorization header transmitted by the web
     browser.  The return value is either `None` if the header was invalid or
     not given, otherwise an :class:`~werkzeug.datastructures.Authorization`
@@ -716,7 +712,8 @@ def parse_www_authenticate_header(
         auth_type = auth_type.lower()
     except (ValueError, AttributeError):
         return ds.WWWAuthenticate(value.strip().lower(), on_update=on_update)
-    return ds.WWWAuthenticate(auth_type, parse_dict_header(auth_info), on_update)
+    return ds.WWWAuthenticate(auth_type, parse_dict_header(auth_info),
+                              on_update)
 
 
 def parse_if_range_header(value: t.Optional[str]) -> "ds.IfRange":
@@ -737,9 +734,8 @@ def parse_if_range_header(value: t.Optional[str]) -> "ds.IfRange":
     return ds.IfRange(unquote_etag(value)[0])
 
 
-def parse_range_header(
-    value: t.Optional[str], make_inclusive: bool = True
-) -> t.Optional["ds.Range"]:
+def parse_range_header(value: t.Optional[str],
+                       make_inclusive: bool = True) -> t.Optional["ds.Range"]:
     """Parses a range header into a :class:`~werkzeug.datastructures.Range`
     object.  If the header is missing or malformed `None` is returned.
     `ranges` is a list of ``(start, stop)`` tuples where the ranges are
@@ -948,7 +944,8 @@ def parse_date(value: t.Optional[str]) -> t.Optional[datetime]:
 
 
 def cookie_date(
-    expires: t.Optional[t.Union[datetime, date, int, float, struct_time]] = None
+    expires: t.Optional[t.Union[datetime, date, int, float,
+                                struct_time]] = None
 ) -> str:
     """Format a datetime object or timestamp into an :rfc:`2822` date
     string for ``Set-Cookie expires``.
@@ -966,7 +963,8 @@ def cookie_date(
 
 
 def http_date(
-    timestamp: t.Optional[t.Union[datetime, date, int, float, struct_time]] = None
+    timestamp: t.Optional[t.Union[datetime, date, int, float,
+                                  struct_time]] = None
 ) -> str:
     """Format a datetime object or timestamp into an :rfc:`2822` date
     string.
@@ -984,7 +982,9 @@ def http_date(
     if isinstance(timestamp, date):
         if not isinstance(timestamp, datetime):
             # Assume plain date is midnight UTC.
-            timestamp = datetime.combine(timestamp, time(), tzinfo=timezone.utc)
+            timestamp = datetime.combine(timestamp,
+                                         time(),
+                                         tzinfo=timezone.utc)
         else:
             # Ensure datetime is timezone-aware.
             timestamp = _dt_as_utc(timestamp)
@@ -1019,7 +1019,8 @@ def parse_age(value: t.Optional[str] = None) -> t.Optional[timedelta]:
         return None
 
 
-def dump_age(age: t.Optional[t.Union[timedelta, int]] = None) -> t.Optional[str]:
+def dump_age(
+        age: t.Optional[t.Union[timedelta, int]] = None) -> t.Optional[str]:
     """Formats the duration as a base-10 integer.
 
     :param age: should be an integer number of seconds,
@@ -1118,8 +1119,8 @@ def is_resource_modified(
 
 
 def remove_entity_headers(
-    headers: t.Union["ds.Headers", t.List[t.Tuple[str, str]]],
-    allowed: t.Iterable[str] = ("expires", "content-location"),
+        headers: t.Union["ds.Headers", t.List[t.Tuple[str, str]]],
+        allowed: t.Iterable[str] = ("expires", "content-location"),
 ) -> None:
     """Remove all entity headers from a list or :class:`Headers` object.  This
     operation works in-place.  `Expires` and `Content-Location` headers are
@@ -1134,16 +1135,12 @@ def remove_entity_headers(
                     they are entity headers.
     """
     allowed = {x.lower() for x in allowed}
-    headers[:] = [
-        (key, value)
-        for key, value in headers
-        if not is_entity_header(key) or key.lower() in allowed
-    ]
+    headers[:] = [(key, value) for key, value in headers
+                  if not is_entity_header(key) or key.lower() in allowed]
 
 
 def remove_hop_by_hop_headers(
-    headers: t.Union["ds.Headers", t.List[t.Tuple[str, str]]]
-) -> None:
+        headers: t.Union["ds.Headers", t.List[t.Tuple[str, str]]]) -> None:
     """Remove all HTTP/1.1 "Hop-by-Hop" headers from a list or
     :class:`Headers` object.  This operation works in-place.
 
@@ -1151,9 +1148,8 @@ def remove_hop_by_hop_headers(
 
     :param headers: a list or :class:`Headers` object.
     """
-    headers[:] = [
-        (key, value) for key, value in headers if not is_hop_by_hop_header(key)
-    ]
+    headers[:] = [(key, value) for key, value in headers
+                  if not is_hop_by_hop_header(key)]
 
 
 def is_entity_header(header: str) -> bool:
@@ -1304,7 +1300,8 @@ def dump_cookie(
         if not isinstance(expires, str):
             expires = http_date(expires)
     elif max_age is not None and sync_expires:
-        expires = http_date(datetime.now(tz=timezone.utc).timestamp() + max_age)
+        expires = http_date(
+            datetime.now(tz=timezone.utc).timestamp() + max_age)
 
     if samesite is not None:
         samesite = samesite.title()
@@ -1366,9 +1363,8 @@ def dump_cookie(
     return rv
 
 
-def is_byte_range_valid(
-    start: t.Optional[int], stop: t.Optional[int], length: t.Optional[int]
-) -> bool:
+def is_byte_range_valid(start: t.Optional[int], stop: t.Optional[int],
+                        length: t.Optional[int]) -> bool:
     """Checks if a given byte content range is valid for the given length.
 
     .. versionadded:: 0.7
@@ -1385,4 +1381,3 @@ def is_byte_range_valid(
 
 
 # circular dependencies
-from . import datastructures as ds

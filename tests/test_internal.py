@@ -1,12 +1,10 @@
-from warnings import filterwarnings
-from warnings import resetwarnings
+from warnings import filterwarnings, resetwarnings
 
 import pytest
 
 from werkzeug import _internal as internal
 from werkzeug.test import create_environ
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.wrappers import Request, Response
 
 
 def test_easteregg():

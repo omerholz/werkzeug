@@ -6,16 +6,13 @@ import string
 import sys
 import typing
 import typing as t
-from datetime import date
-from datetime import datetime
-from datetime import timezone
+from datetime import date, datetime, timezone
 from itertools import chain
 from weakref import WeakKeyDictionary
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
+
     from .wrappers.request import Request  # noqa: F401
 
 _logger: t.Optional[logging.Logger] = None
@@ -23,12 +20,17 @@ _signature_cache = WeakKeyDictionary()  # type: ignore
 _epoch_ord = date(1970, 1, 1).toordinal()
 _legal_cookie_chars = frozenset(
     c.encode("ascii")
-    for c in f"{string.ascii_letters}{string.digits}/=!#$%&'*+-.^_`|~:"
-)
+    for c in f"{string.ascii_letters}{string.digits}/=!#$%&'*+-.^_`|~:")
 
-_cookie_quoting_map = {b",": b"\\054", b";": b"\\073", b'"': b'\\"', b"\\": b"\\\\"}
+_cookie_quoting_map = {
+    b",": b"\\054",
+    b";": b"\\073",
+    b'"': b'\\"',
+    b"\\": b"\\\\"
+}
 for _i in chain(range(32), range(127, 256)):
-    _cookie_quoting_map[_i.to_bytes(1, sys.byteorder)] = f"\\{_i:03o}".encode("latin1")
+    _cookie_quoting_map[_i.to_bytes(
+        1, sys.byteorder)] = f"\\{_i:03o}".encode("latin1")
 
 _octal_re = re.compile(br"\\[0-3][0-7][0-7]")
 _quote_re = re.compile(br"[\\].")
@@ -93,9 +95,9 @@ def _check_str_tuple(value: t.Tuple[t.AnyStr, ...]) -> None:
 _default_encoding = sys.getdefaultencoding()
 
 
-def _to_bytes(
-    x: t.Union[str, bytes], charset: str = _default_encoding, errors: str = "strict"
-) -> bytes:
+def _to_bytes(x: t.Union[str, bytes],
+              charset: str = _default_encoding,
+              errors: str = "strict") -> bytes:
     if x is None or isinstance(x, bytes):
         return x
 
@@ -147,22 +149,23 @@ def _to_str(
     return x.decode(charset, errors)  # type: ignore
 
 
-def _wsgi_decoding_dance(
-    s: str, charset: str = "utf-8", errors: str = "replace"
-) -> str:
+def _wsgi_decoding_dance(s: str,
+                         charset: str = "utf-8",
+                         errors: str = "replace") -> str:
     return s.encode("latin1").decode(charset, errors)
 
 
-def _wsgi_encoding_dance(
-    s: str, charset: str = "utf-8", errors: str = "replace"
-) -> str:
+def _wsgi_encoding_dance(s: str,
+                         charset: str = "utf-8",
+                         errors: str = "replace") -> str:
     if isinstance(s, bytes):
         return s.decode("latin1", errors)
 
     return s.encode(charset).decode("latin1", errors)
 
 
-def _get_environ(obj: t.Union["WSGIEnvironment", "Request"]) -> "WSGIEnvironment":
+def _get_environ(
+        obj: t.Union["WSGIEnvironment", "Request"]) -> "WSGIEnvironment":
     env = getattr(obj, "environ", obj)
     assert isinstance(
         env, dict
@@ -353,9 +356,8 @@ class _DictAccessorProperty(t.Generic[_TAccessorValue]):
         raise NotImplementedError
 
     @typing.overload
-    def __get__(
-        self, instance: None, owner: type
-    ) -> "_DictAccessorProperty[_TAccessorValue]":
+    def __get__(self, instance: None,
+                owner: type) -> "_DictAccessorProperty[_TAccessorValue]":
         ...
 
     @typing.overload
@@ -446,11 +448,11 @@ def _cookie_unquote(b: bytes) -> bytes:
             k = q_match.start(0)
         if q_match and (not o_match or k < j):
             _push(b[i:k])
-            _push(b[k + 1 : k + 2])
+            _push(b[k + 1:k + 2])
             i = k + 2
         else:
             _push(b[i:j])
-            rv.append(int(b[j + 1 : j + 4], 8))
+            rv.append(int(b[j + 1:j + 4], 8))
             i = j + 4
 
     return bytes(rv)
@@ -534,24 +536,19 @@ def _make_cookie_domain(domain: t.Optional[str]) -> t.Optional[bytes]:
         "localhost) is not supported by complying browsers. You should "
         "have something like: '127.0.0.1 localhost dev.localhost' on "
         "your hosts file and then point your server to run on "
-        "'dev.localhost' and also set 'domain' for 'dev.localhost'"
-    )
+        "'dev.localhost' and also set 'domain' for 'dev.localhost'")
 
 
 def _easteregg(app: t.Optional["WSGIApplication"] = None) -> "WSGIApplication":
     """Like the name says.  But who knows how it works?"""
-
     def bzzzzzzz(gyver: bytes) -> str:
         import base64
         import zlib
 
         return zlib.decompress(base64.b64decode(gyver)).decode("ascii")
 
-    gyver = "\n".join(
-        [
-            x + (77 - len(x)) * " "
-            for x in bzzzzzzz(
-                b"""
+    gyver = "\n".join([
+        x + (77 - len(x)) * " " for x in bzzzzzzz(b"""
 eJyFlzuOJDkMRP06xRjymKgDJCDQStBYT8BCgK4gTwfQ2fcFs2a2FzvZk+hvlcRvRJD148efHt9m
 9Xz94dRY5hGt1nrYcXx7us9qlcP9HHNh28rz8dZj+q4rynVFFPdlY4zH873NKCexrDM6zxxRymzz
 4QIxzK4bth1PV7+uHn6WXZ5C4ka/+prFzx3zWLMHAVZb8RRUxtFXI5DTQ2n3Hi2sNI+HK43AOWSY
@@ -582,17 +579,15 @@ p1qXK3Du2mnr5INXmT/78KI12n11EFBkJHHp0wJyLe9MvPNUGYsf+170maayRoy2lURGHAIapSpQ
 krEDuNoJCHNlZYhKpvw4mspVWxqo415n8cD62N9+EfHrAvqQnINStetek7RY2Urv8nxsnGaZfRr/
 nhXbJ6m/yl1LzYqscDZA9QHLNbdaSTTr+kFg3bC0iYbX/eQy0Bv3h4B50/SGYzKAXkCeOLI3bcAt
 mj2Z/FM1vQWgDynsRwNvrWnJHlespkrp8+vO1jNaibm+PhqXPPv30YwDZ6jApe3wUjFQobghvW9p
-7f2zLkGNv8b191cD/3vs9Q833z8t"""
-            ).splitlines()
-        ]
-    )
+7f2zLkGNv8b191cD/3vs9Q833z8t""").splitlines()
+    ])
 
-    def easteregged(
-        environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def easteregged(environ: "WSGIEnvironment",
+                    start_response: "StartResponse") -> t.Iterable[bytes]:
         def injecting_start_response(
-            status: str, headers: t.List[t.Tuple[str, str]], exc_info: t.Any = None
-        ) -> t.Callable[[bytes], t.Any]:
+                status: str,
+                headers: t.List[t.Tuple[str, str]],
+                exc_info: t.Any = None) -> t.Callable[[bytes], t.Any]:
             headers.append(("X-Powered-By", "Werkzeug"))
             return start_response(status, headers, exc_info)
 
@@ -618,9 +613,7 @@ mj2Z/FM1vQWgDynsRwNvrWnJHlespkrp8+vO1jNaibm+PhqXPPv30YwDZ6jApe3wUjFQobghvW9p
 <p>the Swiss Army knife of Python web development.</p>
 <pre>{gyver}\n\n\n</pre>
 </body>
-</html>""".encode(
-                "latin1"
-            )
+</html>""".encode("latin1")
         ]
 
     return easteregged

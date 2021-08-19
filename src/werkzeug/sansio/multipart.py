@@ -1,14 +1,9 @@
 import re
 from dataclasses import dataclass
-from enum import auto
-from enum import Enum
-from typing import cast
-from typing import List
-from typing import Optional
-from typing import Tuple
+from enum import Enum, auto
+from typing import List, Optional, Tuple, cast
 
-from .._internal import _to_bytes
-from .._internal import _to_str
+from .._internal import _to_bytes, _to_str
 from ..datastructures import Headers
 from ..exceptions import RequestEntityTooLarge
 from ..http import parse_options_header
@@ -100,8 +95,8 @@ class MultipartDecoder:
         # epilogue boundary (for empty form-data) hence the matching
         # group to understand if it is an epilogue boundary.
         self.preamble_re = re.compile(
-            br"%s?--%s(--[^\S\n\r]*%s?|[^\S\n\r]*%s)"
-            % (LINE_BREAK, re.escape(boundary), LINE_BREAK, LINE_BREAK),
+            br"%s?--%s(--[^\S\n\r]*%s?|[^\S\n\r]*%s)" %
+            (LINE_BREAK, re.escape(boundary), LINE_BREAK, LINE_BREAK),
             re.MULTILINE,
         )
         # A boundary must include a line break prefix and suffix, and
@@ -109,8 +104,8 @@ class MultipartDecoder:
         # could be the epilogue boundary hence the matching group to
         # understand if it is an epilogue boundary.
         self.boundary_re = re.compile(
-            br"%s--%s(--[^\S\n\r]*%s?|[^\S\n\r]*%s)"
-            % (LINE_BREAK, re.escape(boundary), LINE_BREAK, LINE_BREAK),
+            br"%s--%s(--[^\S\n\r]*%s?|[^\S\n\r]*%s)" %
+            (LINE_BREAK, re.escape(boundary), LINE_BREAK, LINE_BREAK),
             re.MULTILINE,
         )
 
@@ -129,10 +124,8 @@ class MultipartDecoder:
     def receive_data(self, data: Optional[bytes]) -> None:
         if data is None:
             self.complete = True
-        elif (
-            self.max_form_memory_size is not None
-            and len(self.buffer) + len(data) > self.max_form_memory_size
-        ):
+        elif (self.max_form_memory_size is not None and
+              len(self.buffer) + len(data) > self.max_form_memory_size):
             raise RequestEntityTooLarge()
         else:
             self.buffer.extend(data)
@@ -147,22 +140,21 @@ class MultipartDecoder:
                     self.state = State.EPILOGUE
                 else:
                     self.state = State.PART
-                data = bytes(self.buffer[: match.start()])
-                del self.buffer[: match.end()]
+                data = bytes(self.buffer[:match.start()])
+                del self.buffer[:match.end()]
                 event = Preamble(data=data)
 
         elif self.state == State.PART:
             match = BLANK_LINE_RE.search(self.buffer)
             if match is not None:
-                headers = self._parse_headers(self.buffer[: match.start()])
-                del self.buffer[: match.end()]
+                headers = self._parse_headers(self.buffer[:match.start()])
+                del self.buffer[:match.end()]
 
                 if "content-disposition" not in headers:
                     raise ValueError("Missing Content-Disposition header")
 
                 disposition, extra = parse_options_header(
-                    headers["content-disposition"]
-                )
+                    headers["content-disposition"])
                 name = cast(str, extra.get("name"))
                 filename = extra.get("filename")
                 if filename is not None:
@@ -210,7 +202,8 @@ class MultipartDecoder:
             self.state = State.COMPLETE
 
         if self.complete and isinstance(event, NeedData):
-            raise ValueError(f"Invalid form-data cannot parse beyond {self.state}")
+            raise ValueError(
+                f"Invalid form-data cannot parse beyond {self.state}")
 
         return event
 
@@ -236,13 +229,14 @@ class MultipartEncoder:
             self.state = State.PART
             return event.data
         elif isinstance(event, (Field, File)) and self.state in {
-            State.PREAMBLE,
-            State.PART,
-            State.DATA,
+                State.PREAMBLE,
+                State.PART,
+                State.DATA,
         }:
             self.state = State.DATA
             data = b"\r\n--" + self.boundary + b"\r\n"
-            data += b'Content-Disposition: form-data; name="%s"' % _to_bytes(event.name)
+            data += b'Content-Disposition: form-data; name="%s"' % _to_bytes(
+                event.name)
             if isinstance(event, File):
                 data += b'; filename="%s"' % _to_bytes(event.filename)
             data += b"\r\n"

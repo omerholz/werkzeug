@@ -3,8 +3,7 @@ import pickle
 import tempfile
 import typing as t
 from contextlib import contextmanager
-from copy import copy
-from copy import deepcopy
+from copy import copy, deepcopy
 
 import pytest
 
@@ -24,8 +23,8 @@ class TestNativeItermethods:
 
             def items(self, multi=1):
                 return iter(
-                    zip(iter(self.keys(multi=multi)), iter(self.values(multi=multi)))
-                )
+                    zip(iter(self.keys(multi=multi)),
+                        iter(self.values(multi=multi))))
 
         d = StupidDict()
         expected_keys = ["a", "b", "c"]
@@ -159,8 +158,10 @@ class _MutableMultiDictTests:
             ("c", 3),
         ]
 
-        assert list(sorted(md.lists())) == [("a", [1, 2, 3]), ("b", [2]), ("c", [3])]
-        assert list(sorted(md.lists())) == [("a", [1, 2, 3]), ("b", [2]), ("c", [3])]
+        assert list(sorted(md.lists())) == [("a", [1, 2, 3]), ("b", [2]),
+                                            ("c", [3])]
+        assert list(sorted(md.lists())) == [("a", [1, 2, 3]), ("b", [2]),
+                                            ("c", [3])]
 
         # copy method
         c = md.copy()
@@ -372,7 +373,8 @@ class TestMultiDict(_MutableMultiDictTests):
         with pytest.raises(KeyError):
             md.pop("empty")
 
-    def test_multidict_popitem_raise_badrequestkeyerror_for_empty_list_value(self):
+    def test_multidict_popitem_raise_badrequestkeyerror_for_empty_list_value(
+            self):
         mapping = []
         md = self.storage_class(mapping)
 
@@ -511,15 +513,17 @@ class TestOrderedMultiDict(_MutableMultiDictTests):
         pytest.raises(TypeError, hash, d)
 
     def test_iterables(self):
-        a = ds.MultiDict((("key_a", "value_a"),))
-        b = ds.MultiDict((("key_b", "value_b"),))
+        a = ds.MultiDict((("key_a", "value_a"), ))
+        b = ds.MultiDict((("key_b", "value_b"), ))
         ab = ds.CombinedMultiDict((a, b))
 
-        assert sorted(ab.lists()) == [("key_a", ["value_a"]), ("key_b", ["value_b"])]
+        assert sorted(ab.lists()) == [("key_a", ["value_a"]),
+                                      ("key_b", ["value_b"])]
         assert sorted(ab.listvalues()) == [["value_a"], ["value_b"]]
         assert sorted(ab.keys()) == ["key_a", "key_b"]
 
-        assert sorted(ab.lists()) == [("key_a", ["value_a"]), ("key_b", ["value_b"])]
+        assert sorted(ab.lists()) == [("key_a", ["value_a"]),
+                                      ("key_b", ["value_b"])]
         assert sorted(ab.listvalues()) == [["value_a"], ["value_b"]]
         assert sorted(ab.keys()) == ["key_a", "key_b"]
 
@@ -574,7 +578,8 @@ class TestCombinedMultiDict:
         assert d.getlist("bar") == ["2", "3"]
 
         assert sorted(d.items()) == [("bar", "2"), ("foo", "1")]
-        assert sorted(d.items(multi=True)) == [("bar", "2"), ("bar", "3"), ("foo", "1")]
+        assert sorted(d.items(multi=True)) == [("bar", "2"), ("bar", "3"),
+                                               ("foo", "1")]
         assert "missingkey" not in d
         assert "foo" in d
 
@@ -596,7 +601,7 @@ class TestCombinedMultiDict:
 
         # make sure lists merges
         md1 = ds.MultiDict((("foo", "bar"), ("foo", "baz")))
-        md2 = ds.MultiDict((("foo", "blafasel"),))
+        md2 = ds.MultiDict((("foo", "blafasel"), ))
         x = self.storage_class((md1, md2))
         assert list(x.lists()) == [("foo", ["bar", "baz", "blafasel"])]
 
@@ -633,7 +638,8 @@ class TestHeaders:
         assert len(headers.getlist("Content-Type")) == 1
 
         # list conversion
-        assert headers.to_wsgi_list() == [("Content-Type", "foo/bar"), ("X-Foo", "bar")]
+        assert headers.to_wsgi_list() == [("Content-Type", "foo/bar"),
+                                          ("X-Foo", "bar")]
         assert str(headers) == "Content-Type: foo/bar\r\nX-Foo: bar\r\n\r\n"
         assert str(self.storage_class()) == "\r\n"
 
@@ -650,14 +656,12 @@ class TestHeaders:
 
     def test_defaults_and_conversion(self):
         # defaults
-        headers = self.storage_class(
-            [
-                ("Content-Type", "text/plain"),
-                ("X-Foo", "bar"),
-                ("X-Bar", "1"),
-                ("X-Bar", "2"),
-            ]
-        )
+        headers = self.storage_class([
+            ("Content-Type", "text/plain"),
+            ("X-Foo", "bar"),
+            ("X-Bar", "1"),
+            ("X-Bar", "2"),
+        ])
         assert headers.getlist("x-bar") == ["1", "2"]
         assert headers.get("x-Bar") == "1"
         assert headers.get("Content-Type") == "text/plain"
@@ -678,7 +682,8 @@ class TestHeaders:
 
         # list like operations
         assert headers[0] == ("Content-Type", "text/plain")
-        assert headers[:1] == self.storage_class([("Content-Type", "text/plain")])
+        assert headers[:1] == self.storage_class([("Content-Type",
+                                                   "text/plain")])
         del headers[:2]
         del headers[-1]
         assert headers == self.storage_class([("X-Bar", "1")])
@@ -729,7 +734,8 @@ class TestHeaders:
         h.set("Content-Type", "application/whocares")
         h.set("X-Forwarded-For", "192.168.0.123")
         h[:] = [(k, v) for k, v in h if k.startswith("X-")]
-        assert list(h) == [("X-Foo-Poo", "bleh"), ("X-Forwarded-For", "192.168.0.123")]
+        assert list(h) == [("X-Foo-Poo", "bleh"),
+                           ("X-Forwarded-For", "192.168.0.123")]
 
     def test_bytes_operations(self):
         h = self.storage_class()
@@ -977,7 +983,8 @@ class TestCacheControl:
 
 class TestContentSecurityPolicy:
     def test_construct(self):
-        csp = ds.ContentSecurityPolicy([("font-src", "'self'"), ("media-src", "*")])
+        csp = ds.ContentSecurityPolicy([("font-src", "'self'"),
+                                        ("media-src", "*")])
         assert csp.font_src == "'self'"
         assert csp.media_src == "*"
         policies = [policy.strip() for policy in csp.to_header().split(";")]
@@ -997,9 +1004,8 @@ class TestAccept:
     storage_class = ds.Accept
 
     def test_accept_basic(self):
-        accept = self.storage_class(
-            [("tinker", 0), ("tailor", 0.333), ("soldier", 0.667), ("sailor", 1)]
-        )
+        accept = self.storage_class([("tinker", 0), ("tailor", 0.333),
+                                     ("soldier", 0.667), ("sailor", 1)])
         # check __getitem__ on indices
         assert accept[3] == ("tinker", 0)
         assert accept[2] == ("tailor", 0.333)
@@ -1034,24 +1040,23 @@ class TestAccept:
         assert accept.find("sailor") == 0
         assert accept.find("spy") == -1
         # check to_header method
-        assert accept.to_header() == "sailor,soldier;q=0.667,tailor;q=0.333,tinker;q=0"
+        assert accept.to_header(
+        ) == "sailor,soldier;q=0.667,tailor;q=0.333,tinker;q=0"
         # check best_match method
-        assert (
-            accept.best_match(["tinker", "tailor", "soldier", "sailor"], default=None)
-            == "sailor"
-        )
-        assert (
-            accept.best_match(["tinker", "tailor", "soldier"], default=None)
-            == "soldier"
-        )
-        assert accept.best_match(["tinker", "tailor"], default=None) == "tailor"
+        assert (accept.best_match(["tinker", "tailor", "soldier", "sailor"],
+                                  default=None) == "sailor")
+        assert (accept.best_match(["tinker", "tailor", "soldier"],
+                                  default=None) == "soldier")
+        assert accept.best_match(["tinker", "tailor"],
+                                 default=None) == "tailor"
         assert accept.best_match(["tinker"], default=None) is None
         assert accept.best_match(["tinker"], default="x") == "x"
 
     def test_accept_wildcard(self):
         accept = self.storage_class([("*", 0), ("asterisk", 1)])
         assert "*" in accept
-        assert accept.best_match(["asterisk", "star"], default=None) == "asterisk"
+        assert accept.best_match(["asterisk", "star"],
+                                 default=None) == "asterisk"
         assert accept.best_match(["star"], default=None) is None
 
     def test_accept_keep_order(self):
@@ -1066,7 +1071,8 @@ class TestAccept:
         accept = self.storage_class([("asterisk", 0), ("star", 0.5), ("*", 1)])
         assert accept.best_match(["star", "asterisk"], default=None) == "star"
         assert accept.best_match(["asterisk", "star"], default=None) == "star"
-        assert accept.best_match(["asterisk", "times"], default=None) == "times"
+        assert accept.best_match(["asterisk", "times"],
+                                 default=None) == "times"
         assert accept.best_match(["asterisk"], default=None) is None
 
     def test_accept_equal_quality(self):
@@ -1127,7 +1133,8 @@ class TestLanguageAccept:
             ([("en", 1)], ["en_US"], None, "en_US"),
             ([("en-GB", 1)], ["en-US"], None, None),
             ([("de_AT", 1), ("de", 0.9)], ["en"], None, None),
-            ([("de_AT", 1), ("de", 0.9), ("en-US", 0.8)], ["de", "en"], None, "de"),
+            ([("de_AT", 1), ("de", 0.9),
+              ("en-US", 0.8)], ["de", "en"], None, "de"),
             ([("de_AT", 0.9), ("en-US", 1)], ["en"], None, "en"),
             ([("en-us", 1)], ["en-us"], None, "en-us"),
             ([("en-us", 1)], ["en-us", "en"], None, "en-us"),
@@ -1150,7 +1157,9 @@ class TestFileStorage:
         file_storage = self.storage_class(content_type="APPLICATION/JSON")
         assert file_storage.mimetype == "application/json"
 
-    @pytest.mark.parametrize("data", [io.StringIO("one\ntwo"), io.BytesIO(b"one\ntwo")])
+    @pytest.mark.parametrize(
+        "data", [io.StringIO("one\ntwo"),
+                 io.BytesIO(b"one\ntwo")])
     def test_bytes_proper_sentinel(self, data):
         # iterate over new lines and don't enter an infinite loop
         storage = self.storage_class(data)
@@ -1161,7 +1170,8 @@ class TestFileStorage:
 
         assert idx == 1
 
-    @pytest.mark.parametrize("stream", (tempfile.SpooledTemporaryFile, io.BytesIO))
+    @pytest.mark.parametrize("stream",
+                             (tempfile.SpooledTemporaryFile, io.BytesIO))
     def test_proxy_can_access_stream_attrs(self, stream):
         """``SpooledTemporaryFile`` doesn't implement some of
         ``IOBase``. Ensure that ``FileStorage`` can still access the
@@ -1175,7 +1185,8 @@ class TestFileStorage:
         for name in ("fileno", "writable", "readable", "seekable"):
             assert hasattr(file_storage, name)
 
-    @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+    @pytest.mark.filterwarnings(
+        "ignore::pytest.PytestUnraisableExceptionWarning")
     def test_save_to_pathlib_dst(self, tmp_path):
         src = tmp_path / "src.txt"
         src.write_text("test")
@@ -1206,9 +1217,8 @@ def test_range_to_header(ranges):
     assert r.ranges == ranges
 
 
-@pytest.mark.parametrize(
-    "ranges", ([(0, 0)], [(None, 1)], [(1, 0)], [(0, 1), (-5, 10)])
-)
+@pytest.mark.parametrize("ranges",
+                         ([(0, 0)], [(None, 1)], [(1, 0)], [(0, 1), (-5, 10)]))
 def test_range_validates_ranges(ranges):
     with pytest.raises(ValueError):
         ds.Range("bytes", ranges)

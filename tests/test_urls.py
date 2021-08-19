@@ -51,11 +51,9 @@ def test_fileurl_parsing_windows(implicit_format, localhost, monkeypatch):
 def test_replace():
     url = urls.url_parse("http://de.wikipedia.org/wiki/Troll")
     assert url.replace(query="foo=bar") == urls.url_parse(
-        "http://de.wikipedia.org/wiki/Troll?foo=bar"
-    )
+        "http://de.wikipedia.org/wiki/Troll?foo=bar")
     assert url.replace(scheme="https") == urls.url_parse(
-        "https://de.wikipedia.org/wiki/Troll"
-    )
+        "https://de.wikipedia.org/wiki/Troll")
 
 
 def test_quoting():
@@ -67,19 +65,15 @@ def test_quoting():
     assert urls.url_unquote_plus("foo%2Bbar") == "foo+bar"
     assert urls.url_encode({b"a": None, b"b": b"foo bar"}) == "b=foo+bar"
     assert urls.url_encode({"a": None, "b": "foo bar"}) == "b=foo+bar"
-    assert (
-        urls.url_fix("http://de.wikipedia.org/wiki/Elf (Begriffsklärung)")
-        == "http://de.wikipedia.org/wiki/Elf%20(Begriffskl%C3%A4rung)"
-    )
+    assert (urls.url_fix("http://de.wikipedia.org/wiki/Elf (Begriffsklärung)") ==
+            "http://de.wikipedia.org/wiki/Elf%20(Begriffskl%C3%A4rung)")
     assert urls.url_quote_plus(42) == "42"
     assert urls.url_quote(b"\xff") == "%FF"
 
 
 def test_bytes_unquoting():
-    assert (
-        urls.url_unquote(urls.url_quote('#%="\xf6', charset="latin1"), charset=None)
-        == b'#%="\xf6'
-    )
+    assert (urls.url_unquote(urls.url_quote('#%="\xf6', charset="latin1"),
+                             charset=None) == b'#%="\xf6')
 
 
 def test_url_decoding():
@@ -112,26 +106,29 @@ def test_url_encoding():
     assert urls.url_encode({"foo": "bar 45"}) == "foo=bar+45"
     d = {"foo": 1, "bar": 23, "blah": "Hänsel"}
     assert urls.url_encode(d, sort=True) == "bar=23&blah=H%C3%A4nsel&foo=1"
-    assert (
-        urls.url_encode(d, sort=True, separator=";") == "bar=23;blah=H%C3%A4nsel;foo=1"
-    )
+    assert (urls.url_encode(d, sort=True,
+                            separator=";") == "bar=23;blah=H%C3%A4nsel;foo=1")
 
 
 def test_sorted_url_encode():
-    assert (
-        urls.url_encode(
-            {"a": 42, "b": 23, 1: 1, 2: 2}, sort=True, key=lambda i: str(i[0])
-        )
-        == "1=1&2=2&a=42&b=23"
-    )
-    assert (
-        urls.url_encode(
-            {"A": 1, "a": 2, "B": 3, "b": 4},
-            sort=True,
-            key=lambda x: x[0].lower() + x[0],
-        )
-        == "A=1&a=2&B=3&b=4"
-    )
+    assert (urls.url_encode({
+        "a": 42,
+        "b": 23,
+        1: 1,
+        2: 2
+    },
+        sort=True,
+        key=lambda i: str(i[0])) == "1=1&2=2&a=42&b=23")
+    assert (urls.url_encode(
+        {
+            "A": 1,
+            "a": 2,
+            "B": 3,
+            "b": 4
+        },
+        sort=True,
+        key=lambda x: x[0].lower() + x[0],
+    ) == "A=1&a=2&B=3&b=4")
 
 
 def test_streamed_url_encoding():
@@ -167,10 +164,8 @@ def test_url_fixing():
 
 def test_url_fixing_filepaths():
     x = urls.url_fix(r"file://C:\Users\Administrator\My Documents\ÑÈáÇíí")
-    assert x == (
-        r"file:///C%3A/Users/Administrator/My%20Documents/"
-        r"%C3%91%C3%88%C3%A1%C3%87%C3%AD%C3%AD"
-    )
+    assert x == (r"file:///C%3A/Users/Administrator/My%20Documents/"
+                 r"%C3%91%C3%88%C3%A1%C3%87%C3%AD%C3%AD")
 
     a = urls.url_fix(r"file:/C:/")
     b = urls.url_fix(r"file://C:/")
@@ -190,49 +185,38 @@ def test_url_fixing_qs():
 
     x = urls.url_fix(
         "http://acronyms.thefreedictionary.com/"
-        "Algebraic+Methods+of+Solving+the+Schr%C3%B6dinger+Equation"
-    )
-    assert x == (
-        "http://acronyms.thefreedictionary.com/"
-        "Algebraic+Methods+of+Solving+the+Schr%C3%B6dinger+Equation"
-    )
+        "Algebraic+Methods+of+Solving+the+Schr%C3%B6dinger+Equation")
+    assert x == ("http://acronyms.thefreedictionary.com/"
+                 "Algebraic+Methods+of+Solving+the+Schr%C3%B6dinger+Equation")
 
 
 def test_iri_support():
     assert urls.uri_to_iri("http://xn--n3h.net/") == "http://\u2603.net/"
     assert (
-        urls.uri_to_iri(b"http://%C3%BCser:p%C3%A4ssword@xn--n3h.net/p%C3%A5th")
-        == "http://\xfcser:p\xe4ssword@\u2603.net/p\xe5th"
-    )
+        urls.uri_to_iri(b"http://%C3%BCser:p%C3%A4ssword@xn--n3h.net/p%C3%A5th"
+                        ) == "http://\xfcser:p\xe4ssword@\u2603.net/p\xe5th")
     assert urls.iri_to_uri("http://☃.net/") == "http://xn--n3h.net/"
-    assert (
-        urls.iri_to_uri("http://üser:pässword@☃.net/påth")
-        == "http://%C3%BCser:p%C3%A4ssword@xn--n3h.net/p%C3%A5th"
-    )
+    assert (urls.iri_to_uri("http://üser:pässword@☃.net/påth") ==
+            "http://%C3%BCser:p%C3%A4ssword@xn--n3h.net/p%C3%A5th")
 
-    assert (
-        urls.uri_to_iri("http://test.com/%3Fmeh?foo=%26%2F")
-        == "http://test.com/%3Fmeh?foo=%26%2F"
-    )
+    assert (urls.uri_to_iri("http://test.com/%3Fmeh?foo=%26%2F") ==
+            "http://test.com/%3Fmeh?foo=%26%2F")
 
     # this should work as well, might break on 2.4 because of a broken
     # idna codec
     assert urls.uri_to_iri(b"/foo") == "/foo"
     assert urls.iri_to_uri("/foo") == "/foo"
 
-    assert (
-        urls.iri_to_uri("http://föö.com:8080/bam/baz")
-        == "http://xn--f-1gaa.com:8080/bam/baz"
-    )
+    assert (urls.iri_to_uri("http://föö.com:8080/bam/baz") ==
+            "http://xn--f-1gaa.com:8080/bam/baz")
 
 
 def test_iri_safe_conversion():
     assert urls.iri_to_uri("magnet:?foo=bar") == "magnet:?foo=bar"
-    assert urls.iri_to_uri("itms-service://?foo=bar") == "itms-service:?foo=bar"
-    assert (
-        urls.iri_to_uri("itms-service://?foo=bar", safe_conversion=True)
-        == "itms-service://?foo=bar"
-    )
+    assert urls.iri_to_uri(
+        "itms-service://?foo=bar") == "itms-service:?foo=bar"
+    assert (urls.iri_to_uri("itms-service://?foo=bar",
+                            safe_conversion=True) == "itms-service://?foo=bar")
 
 
 def test_iri_safe_quoting():
@@ -256,8 +240,8 @@ def test_multidict_encoding():
     d = OrderedMultiDict()
     d.add("2013-10-10T23:26:05.657975+0000", "2013-10-10T23:26:05.657975+0000")
     assert (
-        urls.url_encode(d)
-        == "2013-10-10T23%3A26%3A05.657975%2B0000=2013-10-10T23%3A26%3A05.657975%2B0000"
+        urls.url_encode(d) ==
+        "2013-10-10T23%3A26%3A05.657975%2B0000=2013-10-10T23%3A26%3A05.657975%2B0000"
     )
 
 
@@ -307,10 +291,14 @@ def test_url_attributes_bytes():
 
 def test_url_joining():
     assert urls.url_join("/foo", "/bar") == "/bar"
-    assert urls.url_join("http://example.com/foo", "/bar") == "http://example.com/bar"
-    assert urls.url_join("file:///tmp/", "test.html") == "file:///tmp/test.html"
-    assert urls.url_join("file:///tmp/x", "test.html") == "file:///tmp/test.html"
-    assert urls.url_join("file:///tmp/x", "../../../x.html") == "file:///x.html"
+    assert urls.url_join("http://example.com/foo",
+                         "/bar") == "http://example.com/bar"
+    assert urls.url_join("file:///tmp/",
+                         "test.html") == "file:///tmp/test.html"
+    assert urls.url_join("file:///tmp/x",
+                         "test.html") == "file:///tmp/test.html"
+    assert urls.url_join("file:///tmp/x",
+                         "../../../x.html") == "file:///x.html"
 
 
 def test_partial_unencoded_decode():
@@ -382,4 +370,5 @@ def test_uri_to_iri_dont_unquote_space():
 
 
 def test_iri_to_uri_dont_quote_reserved():
-    assert urls.iri_to_uri("/path[bracket]?(paren)") == "/path[bracket]?(paren)"
+    assert urls.iri_to_uri(
+        "/path[bracket]?(paren)") == "/path[bracket]?(paren)"

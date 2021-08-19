@@ -1,7 +1,6 @@
 import json
 
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.wrappers import Request, Response
 
 
 @Request.application

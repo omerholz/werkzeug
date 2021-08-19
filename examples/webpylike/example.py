@@ -1,7 +1,4 @@
-from .webpylike import Response
-from .webpylike import View
-from .webpylike import WebPyApp
-
+from .webpylike import Response, View, WebPyApp
 
 urls = ("/", "index", "/about", "about")
 

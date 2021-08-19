@@ -7,20 +7,11 @@ from typing import Union
 
 from . import exceptions
 from ._internal import _to_str
-from .datastructures import FileStorage
-from .datastructures import Headers
-from .datastructures import MultiDict
+from .datastructures import FileStorage, Headers, MultiDict
 from .http import parse_options_header
-from .sansio.multipart import Data
-from .sansio.multipart import Epilogue
-from .sansio.multipart import Field
-from .sansio.multipart import File
-from .sansio.multipart import MultipartDecoder
-from .sansio.multipart import NeedData
+from .sansio.multipart import Data, Epilogue, Field, File, MultipartDecoder, NeedData
 from .urls import url_decode_stream
-from .wsgi import _make_chunk_iter
-from .wsgi import get_content_length
-from .wsgi import get_input_stream
+from .wsgi import _make_chunk_iter, get_content_length, get_input_stream
 
 # there are some platforms where SpooledTemporaryFile is not available.
 # In that case we need to provide a fallback.
@@ -33,6 +24,7 @@ except ImportError:
 
 if t.TYPE_CHECKING:
     import typing as te
+
     from _typeshed.wsgi import WSGIEnvironment
 
     t_parse_result = t.Tuple[t.IO[bytes], MultiDict, MultiDict]
@@ -66,7 +58,8 @@ def default_stream_factory(
     max_size = 1024 * 500
 
     if SpooledTemporaryFile is not None:
-        return t.cast(t.IO[bytes], SpooledTemporaryFile(max_size=max_size, mode="rb+"))
+        return t.cast(t.IO[bytes],
+                      SpooledTemporaryFile(max_size=max_size, mode="rb+"))
     elif total_content_length is None or total_content_length > max_size:
         return t.cast(t.IO[bytes], TemporaryFile("rb+"))
 
@@ -210,15 +203,14 @@ class FormDataParser:
 
     def get_parse_func(
         self, mimetype: str, options: t.Dict[str, str]
-    ) -> t.Optional[
-        t.Callable[
-            ["FormDataParser", t.IO[bytes], str, t.Optional[int], t.Dict[str, str]],
-            "t_parse_result",
-        ]
-    ]:
+    ) -> t.Optional[t.Callable[[
+            "FormDataParser", t.IO[bytes], str, t.Optional[int], t.Dict[str,
+                                                                        str]
+    ], "t_parse_result", ]]:
         return self.parse_functions.get(mimetype)
 
-    def parse_from_environ(self, environ: "WSGIEnvironment") -> "t_parse_result":
+    def parse_from_environ(self,
+                           environ: "WSGIEnvironment") -> "t_parse_result":
         """Parses the information from the environment as form data.
 
         :param environ: the WSGI environment to be used for parsing.
@@ -227,7 +219,8 @@ class FormDataParser:
         content_type = environ.get("CONTENT_TYPE", "")
         content_length = get_content_length(environ)
         mimetype, options = parse_options_header(content_type)
-        return self.parse(get_input_stream(environ), mimetype, content_length, options)
+        return self.parse(get_input_stream(environ), mimetype, content_length,
+                          options)
 
     def parse(
         self,
@@ -246,11 +239,8 @@ class FormDataParser:
                         the multipart boundary for instance)
         :return: A tuple in the form ``(stream, form, files)``.
         """
-        if (
-            self.max_content_length is not None
-            and content_length is not None
-            and content_length > self.max_content_length
-        ):
+        if (self.max_content_length is not None and content_length is not None and
+                content_length > self.max_content_length):
             # if the input stream is not exhausted, firefox reports Connection Reset
             _exhaust(stream)
             raise exceptions.RequestEntityTooLarge()
@@ -262,7 +252,8 @@ class FormDataParser:
 
         if parse_func is not None:
             try:
-                return parse_func(self, stream, mimetype, content_length, options)
+                return parse_func(self, stream, mimetype, content_length,
+                                  options)
             except ValueError:
                 if not self.silent:
                     raise
@@ -300,26 +291,23 @@ class FormDataParser:
         content_length: t.Optional[int],
         options: t.Dict[str, str],
     ) -> "t_parse_result":
-        if (
-            self.max_form_memory_size is not None
-            and content_length is not None
-            and content_length > self.max_form_memory_size
-        ):
+        if (self.max_form_memory_size is not None and
+                content_length is not None and
+                content_length > self.max_form_memory_size):
             # if the input stream is not exhausted, firefox reports Connection Reset
             _exhaust(stream)
             raise exceptions.RequestEntityTooLarge()
 
-        form = url_decode_stream(stream, self.charset, errors=self.errors, cls=self.cls)
+        form = url_decode_stream(stream,
+                                 self.charset,
+                                 errors=self.errors,
+                                 cls=self.cls)
         return stream, form, self.cls()
 
     #: mapping of mimetypes to parsing functions
-    parse_functions: t.Dict[
-        str,
-        t.Callable[
-            ["FormDataParser", t.IO[bytes], str, t.Optional[int], t.Dict[str, str]],
-            "t_parse_result",
-        ],
-    ] = {
+    parse_functions: t.Dict[str, t.Callable[[
+        "FormDataParser", t.IO[bytes], str, t.Optional[int], t.Dict[str, str]
+    ], "t_parse_result", ], ] = {
         "multipart/form-data": _parse_multipart,
         "application/x-www-form-urlencoded": _parse_urlencoded,
         "application/x-url-encoded": _parse_urlencoded,
@@ -417,8 +405,8 @@ class MultiPartParser:
         return self.charset
 
     def start_file_streaming(
-        self, event: File, total_content_length: t.Optional[int]
-    ) -> t.IO[bytes]:
+            self, event: File,
+            total_content_length: t.Optional[int]) -> t.IO[bytes]:
         content_type = event.headers.get("content-type")
 
         try:
@@ -435,8 +423,8 @@ class MultiPartParser:
         return container
 
     def parse(
-        self, stream: t.IO[bytes], boundary: bytes, content_length: t.Optional[int]
-    ) -> t.Tuple[MultiDict, MultiDict]:
+            self, stream: t.IO[bytes], boundary: bytes,
+            content_length: t.Optional[int]) -> t.Tuple[MultiDict, MultiDict]:
         container: t.Union[t.IO[bytes], t.List[bytes]]
         _write: t.Callable[[bytes], t.Any]
 
@@ -465,30 +453,29 @@ class MultiPartParser:
                     _write = container.append
                 elif isinstance(event, File):
                     current_part = event
-                    container = self.start_file_streaming(event, content_length)
+                    container = self.start_file_streaming(
+                        event, content_length)
                     _write = container.write
                 elif isinstance(event, Data):
                     _write(event.data)
                     if not event.more_data:
                         if isinstance(current_part, Field):
                             value = b"".join(container).decode(
-                                self.get_part_charset(current_part.headers), self.errors
-                            )
+                                self.get_part_charset(current_part.headers),
+                                self.errors)
                             fields.append((current_part.name, value))
                         else:
                             container = t.cast(t.IO[bytes], container)
                             container.seek(0)
-                            files.append(
-                                (
+                            files.append((
+                                current_part.name,
+                                FileStorage(
+                                    container,
+                                    current_part.filename,
                                     current_part.name,
-                                    FileStorage(
-                                        container,
-                                        current_part.filename,
-                                        current_part.name,
-                                        headers=current_part.headers,
-                                    ),
-                                )
-                            )
+                                    headers=current_part.headers,
+                                ),
+                            ))
 
                 event = parser.next_event()
 

@@ -2,15 +2,13 @@ import os
 import sys
 
 from werkzeug import _reloader
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.wrappers import Request, Response
 
 # Tox puts the tmp dir in the venv sys.prefix, patch the reloader so
 # it doesn't skip real_app.
 if "TOX_ENV_DIR" in os.environ:
     _reloader._ignore_prefixes = tuple(
-        set(_reloader._ignore_prefixes) - {sys.prefix, sys.exec_prefix}
-    )
+        set(_reloader._ignore_prefixes) - {sys.prefix, sys.exec_prefix})
 
 
 @Request.application

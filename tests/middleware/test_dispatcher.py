@@ -1,7 +1,6 @@
 from werkzeug._internal import _to_bytes
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.test import create_environ
-from werkzeug.test import run_wsgi_app
+from werkzeug.test import create_environ, run_wsgi_app
 
 
 def test_dispatcher():
@@ -15,11 +14,15 @@ def test_dispatcher():
 
     app = DispatcherMiddleware(
         null_application,
-        {"/test1": dummy_application, "/test2/very": dummy_application},
+        {
+            "/test1": dummy_application,
+            "/test2/very": dummy_application
+        },
     )
     tests = {
         "/test1": ("/test1", "/test1/asfd", "/test1/very"),
-        "/test2/very": ("/test2/very", "/test2/very/long/path/after/script/name"),
+        "/test2/very":
+        ("/test2/very", "/test2/very/long/path/after/script/name"),
     }
 
     for name, urls in tests.items():

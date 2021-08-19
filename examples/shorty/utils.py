@@ -1,20 +1,15 @@
 from os import path
-from random import randrange
-from random import sample
+from random import randrange, sample
 
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import MetaData
-from sqlalchemy.orm import create_session
-from sqlalchemy.orm import scoped_session
-from werkzeug.local import Local
-from werkzeug.local import LocalManager
-from werkzeug.routing import Map
-from werkzeug.routing import Rule
+from sqlalchemy.orm import create_session, scoped_session
+
+from werkzeug.local import Local, LocalManager
+from werkzeug.routing import Map, Rule
 from werkzeug.urls import url_parse
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import Response
-
 
 TEMPLATE_PATH = path.join(path.dirname(__file__), "templates")
 STATIC_PATH = path.join(path.dirname(__file__), "static")
@@ -28,11 +23,8 @@ application = local("application")
 metadata = MetaData()
 url_map = Map([Rule("/static/<file>", endpoint="static", build_only=True)])
 
-session = scoped_session(
-    lambda: create_session(
-        application.database_engine, autocommit=False, autoflush=False
-    )
-)
+session = scoped_session(lambda: create_session(
+    application.database_engine, autocommit=False, autoflush=False))
 jinja_env = Environment(loader=FileSystemLoader(TEMPLATE_PATH))
 
 
@@ -53,9 +45,8 @@ jinja_env.globals["url_for"] = url_for
 
 
 def render_template(template, **context):
-    return Response(
-        jinja_env.get_template(template).render(**context), mimetype="text/html"
-    )
+    return Response(jinja_env.get_template(template).render(**context),
+                    mimetype="text/html")
 
 
 def validate_url(url):
@@ -79,11 +70,8 @@ class Pagination:
 
     @cached_property
     def entries(self):
-        return (
-            self.query.offset((self.page - 1) * self.per_page)
-            .limit(self.per_page)
-            .all()
-        )
+        return (self.query.offset(
+            (self.page - 1) * self.per_page).limit(self.per_page).all())
 
     @property
     def has_previous(self):

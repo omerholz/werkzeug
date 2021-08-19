@@ -8,6 +8,7 @@
     :license: BSD-3-Clause
 """
 import click
+
 from werkzeug.serving import run_simple
 
 
@@ -23,7 +24,11 @@ def cli():
 
 
 @cli.command()
-@click.option("-h", "--hostname", type=str, default="localhost", help="localhost")
+@click.option("-h",
+              "--hostname",
+              type=str,
+              default="localhost",
+              help="localhost")
 @click.option("-p", "--port", type=int, default=5000, help="5000")
 @click.option("--reloader", is_flag=True, default=False)
 @click.option("--debugger", is_flag=True)

@@ -1,39 +1,30 @@
 import contextlib
 import json
 import os
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 
 import pytest
 
-from werkzeug import Response
-from werkzeug import wrappers
-from werkzeug.datastructures import Accept
-from werkzeug.datastructures import CharsetAccept
-from werkzeug.datastructures import CombinedMultiDict
-from werkzeug.datastructures import Headers
-from werkzeug.datastructures import ImmutableList
-from werkzeug.datastructures import ImmutableMultiDict
-from werkzeug.datastructures import ImmutableOrderedMultiDict
-from werkzeug.datastructures import LanguageAccept
-from werkzeug.datastructures import MIMEAccept
-from werkzeug.datastructures import MultiDict
-from werkzeug.exceptions import BadRequest
-from werkzeug.exceptions import RequestedRangeNotSatisfiable
-from werkzeug.exceptions import SecurityError
-from werkzeug.http import COEP
-from werkzeug.http import COOP
-from werkzeug.http import generate_etag
-from werkzeug.test import Client
-from werkzeug.test import create_environ
-from werkzeug.test import run_wsgi_app
-from werkzeug.wrappers.cors import CORSRequestMixin
-from werkzeug.wrappers.cors import CORSResponseMixin
+from werkzeug import Response, wrappers
+from werkzeug.datastructures import (
+    Accept,
+    CharsetAccept,
+    CombinedMultiDict,
+    Headers,
+    ImmutableList,
+    ImmutableMultiDict,
+    ImmutableOrderedMultiDict,
+    LanguageAccept,
+    MIMEAccept,
+    MultiDict,
+)
+from werkzeug.exceptions import BadRequest, RequestedRangeNotSatisfiable, SecurityError
+from werkzeug.http import COEP, COOP, generate_etag
+from werkzeug.test import Client, create_environ, run_wsgi_app
+from werkzeug.wrappers.cors import CORSRequestMixin, CORSResponseMixin
 from werkzeug.wrappers.json import JSONMixin
-from werkzeug.wsgi import LimitedStream
-from werkzeug.wsgi import wrap_file
+from werkzeug.wsgi import LimitedStream, wrap_file
 
 
 @wrappers.Request.application
@@ -118,12 +109,14 @@ def test_access_route():
     assert req.access_route == ["192.168.1.2", "192.168.1.1"]
     assert req.remote_addr == "192.168.1.3"
 
-    req = wrappers.Request.from_values(environ_base={"REMOTE_ADDR": "192.168.1.3"})
+    req = wrappers.Request.from_values(
+        environ_base={"REMOTE_ADDR": "192.168.1.3"})
     assert list(req.access_route) == ["192.168.1.3"]
 
 
 def test_url_request_descriptors():
-    req = wrappers.Request.from_values("/bar?foo=baz", "http://example.com/test")
+    req = wrappers.Request.from_values("/bar?foo=baz",
+                                       "http://example.com/test")
     assert req.path == "/bar"
     assert req.full_path == "/bar?foo=baz"
     assert req.script_root == "/test"
@@ -134,20 +127,23 @@ def test_url_request_descriptors():
     assert req.host == "example.com"
     assert req.scheme == "http"
 
-    req = wrappers.Request.from_values("/bar?foo=baz", "https://example.com/test")
+    req = wrappers.Request.from_values("/bar?foo=baz",
+                                       "https://example.com/test")
     assert req.scheme == "https"
 
 
 def test_url_request_descriptors_query_quoting():
     next = "http%3A%2F%2Fwww.example.com%2F%3Fnext%3D%2Fbaz%23my%3Dhash"
-    req = wrappers.Request.from_values(f"/bar?next={next}", "http://example.com/")
+    req = wrappers.Request.from_values(f"/bar?next={next}",
+                                       "http://example.com/")
     assert req.path == "/bar"
     assert req.full_path == f"/bar?next={next}"
     assert req.url == f"http://example.com/bar?next={next}"
 
 
 def test_url_request_descriptors_hosts():
-    req = wrappers.Request.from_values("/bar?foo=baz", "http://example.com/test")
+    req = wrappers.Request.from_values("/bar?foo=baz",
+                                       "http://example.com/test")
     req.trusted_hosts = ["example.com"]
     assert req.path == "/bar"
     assert req.full_path == "/bar?foo=baz"
@@ -159,10 +155,12 @@ def test_url_request_descriptors_hosts():
     assert req.host == "example.com"
     assert req.scheme == "http"
 
-    req = wrappers.Request.from_values("/bar?foo=baz", "https://example.com/test")
+    req = wrappers.Request.from_values("/bar?foo=baz",
+                                       "https://example.com/test")
     assert req.scheme == "https"
 
-    req = wrappers.Request.from_values("/bar?foo=baz", "http://example.com/test")
+    req = wrappers.Request.from_values("/bar?foo=baz",
+                                       "http://example.com/test")
     req.trusted_hosts = ["example.org"]
     pytest.raises(SecurityError, lambda: req.url)
     pytest.raises(SecurityError, lambda: req.base_url)
@@ -173,8 +171,7 @@ def test_url_request_descriptors_hosts():
 
 def test_authorization():
     request = wrappers.Request.from_values(
-        headers={"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}
-    )
+        headers={"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="})
     a = request.authorization
     assert a.type == "basic"
     assert a.username == "Aladdin"
@@ -183,8 +180,9 @@ def test_authorization():
 
 def test_authorization_with_unicode():
     request = wrappers.Request.from_values(
-        headers={"Authorization": "Basic 0YDRg9GB0YHQutC40IE60JHRg9C60LLRiw=="}
-    )
+        headers={
+            "Authorization": "Basic 0YDRg9GB0YHQutC40IE60JHRg9C60LLRiw=="
+        })
     a = request.authorization
     assert a.type == "basic"
     assert a.username == "русскиЁ"
@@ -215,8 +213,7 @@ def test_request_access_control():
             "Origin": "https://palletsprojects.com",
             "Access-Control-Request-Headers": "X-A, X-B",
             "Access-Control-Request-Method": "PUT",
-        }
-    )
+        })
     assert request.origin == "https://palletsprojects.com"
     assert request.access_control_request_headers == {"X-A", "X-B"}
     assert request.access_control_request_method == "PUT"
@@ -228,9 +225,10 @@ def test_response_access_control():
     response.access_control_allow_credentials = True
     response.access_control_allow_headers = ["X-A", "X-B"]
     assert response.headers["Access-Control-Allow-Credentials"] == "true"
-    assert set(response.headers["Access-Control-Allow-Headers"].split(", ")) == {
-        "X-A",
-        "X-B",
+    assert set(
+        response.headers["Access-Control-Allow-Headers"].split(", ")) == {
+            "X-A",
+            "X-B",
     }
 
 
@@ -290,7 +288,9 @@ def test_base_response():
 
     response = wrappers.Response(Iterable())
     response.call_on_close(lambda: closed.append(True))
-    app_iter, status, headers = run_wsgi_app(response, create_environ(), buffered=True)
+    app_iter, status, headers = run_wsgi_app(response,
+                                             create_environ(),
+                                             buffered=True)
     assert status == "200 OK"
     assert "".join(app_iter) == ""
     assert len(closed) == 2
@@ -386,52 +386,55 @@ def test_type_forcing():
 
 
 def test_accept():
-    request = wrappers.Request(
-        {
-            "HTTP_ACCEPT": "text/xml,application/xml,application/xhtml+xml,"
-            "text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
-            "HTTP_ACCEPT_CHARSET": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
-            "HTTP_ACCEPT_ENCODING": "gzip,deflate",
-            "HTTP_ACCEPT_LANGUAGE": "en-us,en;q=0.5",
-            "SERVER_NAME": "eggs",
-            "SERVER_PORT": "80",
-        }
-    )
-    assert request.accept_mimetypes == MIMEAccept(
-        [
-            ("text/xml", 1),
-            ("application/xml", 1),
-            ("application/xhtml+xml", 1),
-            ("image/png", 1),
-            ("text/html", 0.9),
-            ("text/plain", 0.8),
-            ("*/*", 0.5),
-        ]
-    )
-    assert request.accept_charsets == CharsetAccept(
-        [("ISO-8859-1", 1), ("utf-8", 0.7), ("*", 0.7)]
-    )
+    request = wrappers.Request({
+        "HTTP_ACCEPT":
+        "text/xml,application/xml,application/xhtml+xml,"
+        "text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
+        "HTTP_ACCEPT_CHARSET":
+        "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
+        "HTTP_ACCEPT_ENCODING":
+        "gzip,deflate",
+        "HTTP_ACCEPT_LANGUAGE":
+        "en-us,en;q=0.5",
+        "SERVER_NAME":
+        "eggs",
+        "SERVER_PORT":
+        "80",
+    })
+    assert request.accept_mimetypes == MIMEAccept([
+        ("text/xml", 1),
+        ("application/xml", 1),
+        ("application/xhtml+xml", 1),
+        ("image/png", 1),
+        ("text/html", 0.9),
+        ("text/plain", 0.8),
+        ("*/*", 0.5),
+    ])
+    assert request.accept_charsets == CharsetAccept([("ISO-8859-1", 1),
+                                                     ("utf-8", 0.7),
+                                                     ("*", 0.7)])
     assert request.accept_encodings == Accept([("gzip", 1), ("deflate", 1)])
-    assert request.accept_languages == LanguageAccept([("en-us", 1), ("en", 0.5)])
+    assert request.accept_languages == LanguageAccept([("en-us", 1),
+                                                       ("en", 0.5)])
 
-    request = wrappers.Request(
-        {"HTTP_ACCEPT": "", "SERVER_NAME": "example.org", "SERVER_PORT": "80"}
-    )
+    request = wrappers.Request({
+        "HTTP_ACCEPT": "",
+        "SERVER_NAME": "example.org",
+        "SERVER_PORT": "80"
+    })
     assert request.accept_mimetypes == MIMEAccept()
 
 
 def test_etag_request():
-    request = wrappers.Request(
-        {
-            "HTTP_CACHE_CONTROL": "no-store, no-cache",
-            "HTTP_IF_MATCH": 'W/"foo", bar, "baz"',
-            "HTTP_IF_NONE_MATCH": 'W/"foo", bar, "baz"',
-            "HTTP_IF_MODIFIED_SINCE": "Tue, 22 Jan 2008 11:18:44 GMT",
-            "HTTP_IF_UNMODIFIED_SINCE": "Tue, 22 Jan 2008 11:18:44 GMT",
-            "SERVER_NAME": "eggs",
-            "SERVER_PORT": "80",
-        }
-    )
+    request = wrappers.Request({
+        "HTTP_CACHE_CONTROL": "no-store, no-cache",
+        "HTTP_IF_MATCH": 'W/"foo", bar, "baz"',
+        "HTTP_IF_NONE_MATCH": 'W/"foo", bar, "baz"',
+        "HTTP_IF_MODIFIED_SINCE": "Tue, 22 Jan 2008 11:18:44 GMT",
+        "HTTP_IF_UNMODIFIED_SINCE": "Tue, 22 Jan 2008 11:18:44 GMT",
+        "SERVER_NAME": "eggs",
+        "SERVER_PORT": "80",
+    })
     assert request.cache_control.no_store
     assert request.cache_control.no_cache
 
@@ -680,9 +683,11 @@ def test_user_agent(user_agent, browser, platform, version, language):
 
 
 def test_invalid_user_agent():
-    request = wrappers.Request(
-        {"HTTP_USER_AGENT": "foo", "SERVER_NAME": "eggs", "SERVER_PORT": "80"}
-    )
+    request = wrappers.Request({
+        "HTTP_USER_AGENT": "foo",
+        "SERVER_NAME": "eggs",
+        "SERVER_PORT": "80"
+    })
 
     with pytest.deprecated_call():
         assert not request.user_agent
@@ -701,8 +706,10 @@ def test_stream_wrapping():
 
     data = b"foo=Hello+World"
     req = wrappers.Request.from_values(
-        "/", method="POST", data=data, content_type="application/x-www-form-urlencoded"
-    )
+        "/",
+        method="POST",
+        data=data,
+        content_type="application/x-www-form-urlencoded")
     req.stream = LowercasingStream(req.stream)
     assert req.form["foo"] == "hello world"
 
@@ -710,8 +717,10 @@ def test_stream_wrapping():
 def test_data_descriptor_triggers_parsing():
     data = b"foo=Hello+World"
     req = wrappers.Request.from_values(
-        "/", method="POST", data=data, content_type="application/x-www-form-urlencoded"
-    )
+        "/",
+        method="POST",
+        data=data,
+        content_type="application/x-www-form-urlencoded")
 
     assert req.data == b""
     assert req.form["foo"] == "Hello World"
@@ -720,8 +729,10 @@ def test_data_descriptor_triggers_parsing():
 def test_get_data_method_parsing_caching_behavior():
     data = b"foo=Hello+World"
     req = wrappers.Request.from_values(
-        "/", method="POST", data=data, content_type="application/x-www-form-urlencoded"
-    )
+        "/",
+        method="POST",
+        data=data,
+        content_type="application/x-www-form-urlencoded")
 
     # get_data() caches, so form stays available
     assert req.get_data() == data
@@ -730,15 +741,19 @@ def test_get_data_method_parsing_caching_behavior():
 
     # here we access the form data first, caching is bypassed
     req = wrappers.Request.from_values(
-        "/", method="POST", data=data, content_type="application/x-www-form-urlencoded"
-    )
+        "/",
+        method="POST",
+        data=data,
+        content_type="application/x-www-form-urlencoded")
     assert req.form["foo"] == "Hello World"
     assert req.get_data() == b""
 
     # Another case is uncached get data which trashes everything
     req = wrappers.Request.from_values(
-        "/", method="POST", data=data, content_type="application/x-www-form-urlencoded"
-    )
+        "/",
+        method="POST",
+        data=data,
+        content_type="application/x-www-form-urlencoded")
     assert req.get_data(cache=False) == data
     assert req.get_data(cache=False) == b""
     assert req.form == {}
@@ -746,8 +761,10 @@ def test_get_data_method_parsing_caching_behavior():
     # Or we can implicitly start the form parser which is similar to
     # the old .data behavior
     req = wrappers.Request.from_values(
-        "/", method="POST", data=data, content_type="application/x-www-form-urlencoded"
-    )
+        "/",
+        method="POST",
+        data=data,
+        content_type="application/x-www-form-urlencoded")
     assert req.get_data(parse_form_data=True) == b""
     assert req.form["foo"] == "Hello World"
 
@@ -756,7 +773,8 @@ def test_etag_response():
     response = wrappers.Response("Hello World")
     assert response.get_etag() == (None, None)
     response.add_etag()
-    assert response.get_etag() == ("0a4d55a8d778e5022fab701977c5d840bbc486d0", False)
+    assert response.get_etag() == ("0a4d55a8d778e5022fab701977c5d840bbc486d0",
+                                   False)
     assert not response.cache_control
     response.cache_control.must_revalidate = True
     response.cache_control.max_age = 60
@@ -768,7 +786,10 @@ def test_etag_response():
 
     assert "date" not in response.headers
     env = create_environ()
-    env.update({"REQUEST_METHOD": "GET", "HTTP_IF_NONE_MATCH": response.get_etag()[0]})
+    env.update({
+        "REQUEST_METHOD": "GET",
+        "HTTP_IF_NONE_MATCH": response.get_etag()[0]
+    })
     response.make_conditional(env)
     assert "date" in response.headers
 
@@ -797,7 +818,8 @@ def test_etag_response_412():
     response = wrappers.Response("Hello World")
     assert response.get_etag() == (None, None)
     response.add_etag()
-    assert response.get_etag() == ("0a4d55a8d778e5022fab701977c5d840bbc486d0", False)
+    assert response.get_etag() == ("0a4d55a8d778e5022fab701977c5d840bbc486d0",
+                                   False)
     assert not response.cache_control
     response.cache_control.must_revalidate = True
     response.cache_control.max_age = 60
@@ -809,9 +831,10 @@ def test_etag_response_412():
 
     assert "date" not in response.headers
     env = create_environ()
-    env.update(
-        {"REQUEST_METHOD": "GET", "HTTP_IF_MATCH": f"{response.get_etag()[0]}xyz"}
-    )
+    env.update({
+        "REQUEST_METHOD": "GET",
+        "HTTP_IF_MATCH": f"{response.get_etag()[0]}xyz"
+    })
     response.make_conditional(env)
     assert "date" in response.headers
 
@@ -870,12 +893,13 @@ def test_range_request_with_file():
     with open(fname, "rb") as f:
         response = wrappers.Response(wrap_file(env, f))
         env["HTTP_RANGE"] = "bytes=0-0"
-        response.make_conditional(
-            env, accept_ranges=True, complete_length=len(fcontent)
-        )
+        response.make_conditional(env,
+                                  accept_ranges=True,
+                                  complete_length=len(fcontent))
         assert response.status_code == 206
         assert response.headers["Accept-Ranges"] == "bytes"
-        assert response.headers["Content-Range"] == f"bytes 0-0/{len(fcontent)}"
+        assert response.headers[
+            "Content-Range"] == f"bytes 0-0/{len(fcontent)}"
         assert response.headers["Content-Length"] == "1"
         assert response.data == fcontent[:1]
 
@@ -890,10 +914,13 @@ def test_range_request_with_complete_file():
         fsize = os.path.getsize(fname)
         response = wrappers.Response(wrap_file(env, f))
         env["HTTP_RANGE"] = f"bytes=0-{fsize - 1}"
-        response.make_conditional(env, accept_ranges=True, complete_length=fsize)
+        response.make_conditional(env,
+                                  accept_ranges=True,
+                                  complete_length=fsize)
         assert response.status_code == 206
         assert response.headers["Accept-Ranges"] == "bytes"
-        assert response.headers["Content-Range"] == f"bytes 0-{fsize - 1}/{fsize}"
+        assert response.headers[
+            "Content-Range"] == f"bytes 0-{fsize - 1}/{fsize}"
         assert response.headers["Content-Length"] == str(fsize)
         assert response.data == fcontent
 
@@ -934,13 +961,16 @@ def test_authenticate():
 def test_authenticate_quoted_qop():
     # Example taken from https://github.com/pallets/werkzeug/issues/633
     resp = wrappers.Response()
-    resp.www_authenticate.set_digest("REALM", "NONCE", qop=("auth", "auth-int"))
+    resp.www_authenticate.set_digest("REALM",
+                                     "NONCE",
+                                     qop=("auth", "auth-int"))
 
     actual = set(f"{resp.headers['WWW-Authenticate']},".split())
-    expected = set('Digest nonce="NONCE", realm="REALM", qop="auth, auth-int",'.split())
+    expected = set(
+        'Digest nonce="NONCE", realm="REALM", qop="auth, auth-int",'.split())
     assert actual == expected
 
-    resp.www_authenticate.set_digest("REALM", "NONCE", qop=("auth",))
+    resp.www_authenticate.set_digest("REALM", "NONCE", qop=("auth", ))
 
     actual = set(f"{resp.headers['WWW-Authenticate']},".split())
     expected = set('Digest nonce="NONCE", realm="REALM", qop="auth",'.split())
@@ -1022,7 +1052,13 @@ def test_common_request_descriptors():
     assert request.mimetype_params == {"charset": "utf-8"}
     assert request.content_length == 23
     assert request.referrer == "http://www.example.com/"
-    assert request.date == datetime(2009, 2, 28, 19, 4, 35, tzinfo=timezone.utc)
+    assert request.date == datetime(2009,
+                                    2,
+                                    28,
+                                    19,
+                                    4,
+                                    35,
+                                    tzinfo=timezone.utc)
     assert request.max_forwards == 10
     assert "no-cache" in request.pragma
     assert request.content_encoding == "gzip"
@@ -1036,7 +1072,11 @@ def test_request_mimetype_always_lowercase():
 
 def test_shallow_mode():
     request = wrappers.Request(
-        {"QUERY_STRING": "foo=bar", "SERVER_NAME": "eggs", "SERVER_PORT": "80"},
+        {
+            "QUERY_STRING": "foo=bar",
+            "SERVER_NAME": "eggs",
+            "SERVER_PORT": "80"
+        },
         shallow=True,
     )
     assert request.args["foo"] == "bar"
@@ -1073,8 +1113,7 @@ def test_file_closing():
         b'Content-Disposition: form-data; name="foo"; filename="foo.txt"\r\n'
         b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
         b"file contents, just the contents\r\n"
-        b"--foo--"
-    )
+        b"--foo--")
     req = wrappers.Request.from_values(
         input_stream=BytesIO(data),
         content_length=len(data),
@@ -1096,8 +1135,7 @@ def test_file_closing_with():
         b'Content-Disposition: form-data; name="foo"; filename="foo.txt"\r\n'
         b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
         b"file contents, just the contents\r\n"
-        b"--foo--"
-    )
+        b"--foo--")
     req = wrappers.Request.from_values(
         input_stream=BytesIO(data),
         content_length=len(data),
@@ -1184,7 +1222,8 @@ def test_urlfication():
     resp.headers["Location"] = "http://üser:pässword@☃.net/påth"
     resp.headers["Content-Location"] = "http://☃.net/"
     headers = resp.get_wsgi_headers(create_environ())
-    assert headers["location"] == "http://%C3%BCser:p%C3%A4ssword@xn--n3h.net/p%C3%A5th"
+    assert headers[
+        "location"] == "http://%C3%BCser:p%C3%A4ssword@xn--n3h.net/p%C3%A5th"
     assert headers["content-location"] == "http://xn--n3h.net/"
 
 
@@ -1264,16 +1303,22 @@ def test_form_data_ordering():
 
 
 def test_values():
-    r = wrappers.Request.from_values(
-        method="POST", query_string={"a": "1"}, data={"a": "2", "b": "2"}
-    )
+    r = wrappers.Request.from_values(method="POST",
+                                     query_string={"a": "1"},
+                                     data={
+                                         "a": "2",
+                                         "b": "2"
+                                     })
     assert r.values["a"] == "1"
     assert r.values["b"] == "2"
 
     # form should not be combined for GET method
-    r = wrappers.Request.from_values(
-        method="GET", query_string={"a": "1"}, data={"a": "2", "b": "2"}
-    )
+    r = wrappers.Request.from_values(method="GET",
+                                     query_string={"a": "1"},
+                                     data={
+                                         "a": "2",
+                                         "b": "2"
+                                     })
     assert r.values["a"] == "1"
     assert "b" not in r.values
 
@@ -1433,14 +1478,17 @@ def test_modified_url_encoding():
     class ModifiedRequest(wrappers.Request):
         url_charset = "euc-kr"
 
-    req = ModifiedRequest.from_values(query_string={"foo": "정상처리"}, charset="euc-kr")
+    req = ModifiedRequest.from_values(query_string={"foo": "정상처리"},
+                                      charset="euc-kr")
     assert req.args["foo"] == "정상처리"
 
 
 def test_request_method_case_sensitivity():
-    req = wrappers.Request(
-        {"REQUEST_METHOD": "get", "SERVER_NAME": "eggs", "SERVER_PORT": "80"}
-    )
+    req = wrappers.Request({
+        "REQUEST_METHOD": "get",
+        "SERVER_NAME": "eggs",
+        "SERVER_PORT": "80"
+    })
     assert req.method == "GET"
 
 
@@ -1564,21 +1612,20 @@ class TestJSON:
 
     def test_response(self):
         value = {"ä": "b"}
-        response = wrappers.Response(
-            response=json.dumps(value), content_type="application/json"
-        )
+        response = wrappers.Response(response=json.dumps(value),
+                                     content_type="application/json")
         assert response.json == value
 
     def test_force(self):
         value = [1, 2, 3]
-        request = wrappers.Request.from_values(json=value, content_type="text/plain")
+        request = wrappers.Request.from_values(json=value,
+                                               content_type="text/plain")
         assert request.json is None
         assert request.get_json(force=True) == value
 
     def test_silent(self):
-        request = wrappers.Request.from_values(
-            data=b'{"a":}', content_type="application/json"
-        )
+        request = wrappers.Request.from_values(data=b'{"a":}',
+                                               content_type="application/json")
         assert request.get_json(silent=True) is None
 
         with pytest.raises(BadRequest):
@@ -1643,7 +1690,10 @@ def test_check_base_deprecated():
 
     with pytest.deprecated_call(match=r"isinstance\(obj, Request\)"):
         assert isinstance(
-            wrappers.Request({"SERVER_NAME": "example.org", "SERVER_PORT": "80"}),
+            wrappers.Request({
+                "SERVER_NAME": "example.org",
+                "SERVER_PORT": "80"
+            }),
             wrappers.BaseRequest,
         )
 

@@ -8,8 +8,7 @@ import traceback
 import typing as t
 from html import escape
 from tokenize import TokenError
-from types import CodeType
-from types import TracebackType
+from types import CodeType, TracebackType
 
 from .._internal import _to_str
 from ..filesystem import get_filesystem_encoding
@@ -70,9 +69,7 @@ FOOTER = """\
 </html>
 """
 
-PAGE_HTML = (
-    HEADER
-    + """\
+PAGE_HTML = (HEADER + """\
 <h1>%(exception_type)s</h1>
 <div class="detail">
   <p class="errormsg">%(exception)s</p>
@@ -92,29 +89,22 @@ PAGE_HTML = (
   execution (if the evalex feature is enabled), automatic pasting of the
   exceptions and much more.</span>
 </div>
-"""
-    + FOOTER
-    + """
+""" + FOOTER + """
 <!--
 
 %(plaintext_cs)s
 
 -->
-"""
-)
+""")
 
-CONSOLE_HTML = (
-    HEADER
-    + """\
+CONSOLE_HTML = (HEADER + """\
 <h1>Interactive Console</h1>
 <div class="explanation">
 In this console you can execute Python expressions in the context of the
 application.  The initial namespace was created by the debugger automatically.
 </div>
 <div class="console"><div class="inner">The Console requires JavaScript.</div></div>
-"""
-    + FOOTER
-)
+""" + FOOTER)
 
 SUMMARY_HTML = """\
 <div class="%(classes)s">
@@ -162,15 +152,14 @@ def get_current_traceback(
     system exit or others.  This behavior can be disabled by passing `False`
     to the function as first parameter.
     """
-    info = t.cast(
-        t.Tuple[t.Type[BaseException], BaseException, TracebackType], sys.exc_info()
-    )
+    info = t.cast(t.Tuple[t.Type[BaseException], BaseException, TracebackType],
+                  sys.exc_info())
     exc_type, exc_value, tb = info
 
     if ignore_system_exceptions and exc_type in {
-        SystemExit,
-        KeyboardInterrupt,
-        GeneratorExit,
+            SystemExit,
+            KeyboardInterrupt,
+            GeneratorExit,
     }:
         raise
     for _ in range(skip):
@@ -225,7 +214,9 @@ class Traceback:
         self.tb = tb
 
         exception_type = exc_type.__name__
-        if exc_type.__module__ not in {"builtins", "__builtin__", "exceptions"}:
+        if exc_type.__module__ not in {
+                "builtins", "__builtin__", "exceptions"
+        }:
             exception_type = f"{exc_type.__module__}.{exception_type}"
         self.exception_type = exception_type
 
@@ -240,14 +231,18 @@ class Traceback:
             exc_type = type(exc_value)
             tb = exc_value.__traceback__  # type: ignore
         self.groups.reverse()
-        self.frames = [frame for group in self.groups for frame in group.frames]
+        self.frames = [
+            frame for group in self.groups for frame in group.frames
+        ]
 
     def filter_hidden_frames(self) -> None:
         """Remove the frames according to the paste spec."""
         for group in self.groups:
             group.filter_hidden_frames()
 
-        self.frames[:] = [frame for group in self.groups for frame in group.frames]
+        self.frames[:] = [
+            frame for group in self.groups for frame in group.frames
+        ]
 
     @property
     def is_syntax_error(self) -> bool:
@@ -437,7 +432,8 @@ class Frame:
             fn = os.path.realpath(fn)
         self.filename = _to_str(fn, get_filesystem_encoding())
         self.module = self.globals.get("__name__", self.locals.get("__name__"))
-        self.loader = self.globals.get("__loader__", self.locals.get("__loader__"))
+        self.loader = self.globals.get("__loader__",
+                                       self.locals.get("__loader__"))
         self.code = tb.tb_frame.f_code
 
         # support for paste's traceback extensions
@@ -462,14 +458,12 @@ class Frame:
     def is_library(self) -> bool:
         return any(
             self.filename.startswith(os.path.realpath(path))
-            for path in sysconfig.get_paths().values()
-        )
+            for path in sysconfig.get_paths().values())
 
     def render_text(self) -> str:
         return (
             f'  File "{self.filename}", line {self.lineno}, in {self.function_name}\n'
-            f"    {self.current_line.strip()}"
-        )
+            f"    {self.current_line.strip()}")
 
     def render_line_context(self) -> str:
         before, current, after = self.get_context_lines()
@@ -481,8 +475,7 @@ class Frame:
             prefix = len(line) - len(stripped_line)
             rv.append(
                 f'<pre class="line {cls}"><span class="ws">{" " * prefix}</span>'
-                f"{escape(stripped_line) if stripped_line else ' '}</pre>"
-            )
+                f"{escape(stripped_line) if stripped_line else ' '}</pre>")
 
         for line in before:
             render_line(line, "before")
@@ -504,10 +497,11 @@ class Frame:
                     break
                 lineno -= 1
             try:
-                offset = len(inspect.getblock([f"{x.code}\n" for x in lines[lineno:]]))
+                offset = len(
+                    inspect.getblock([f"{x.code}\n" for x in lines[lineno:]]))
             except TokenError:
                 offset = 0
-            for line in lines[lineno : lineno + offset]:
+            for line in lines[lineno:lineno + offset]:
                 line.in_frame = True
 
         # mark current line
@@ -518,7 +512,9 @@ class Frame:
 
         return lines
 
-    def eval(self, code: t.Union[str, CodeType], mode: str = "single") -> t.Any:
+    def eval(self,
+             code: t.Union[str, CodeType],
+             mode: str = "single") -> t.Any:
         """Evaluate code in the context of the frame."""
         if isinstance(code, str):
             code = compile(code, "<interactive>", mode)
@@ -572,11 +568,11 @@ class Frame:
 
         return source.decode(charset, "replace").splitlines()
 
-    def get_context_lines(
-        self, context: int = 5
-    ) -> t.Tuple[t.List[str], str, t.List[str]]:
-        before = self.sourcelines[self.lineno - context - 1 : self.lineno - 1]
-        past = self.sourcelines[self.lineno : self.lineno + context]
+    def get_context_lines(self,
+                          context: int = 5
+                          ) -> t.Tuple[t.List[str], str, t.List[str]]:
+        before = self.sourcelines[self.lineno - context - 1:self.lineno - 1]
+        past = self.sourcelines[self.lineno:self.lineno + context]
         return (before, self.current_line, past)
 
     @property

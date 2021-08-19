@@ -1,19 +1,15 @@
 """Shows how you can implement a simple WebSocket echo server using the
 wsproto library.
 """
-from werkzeug.exceptions import InternalServerError
-from werkzeug.serving import run_simple
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
-from wsproto import ConnectionType
-from wsproto import WSConnection
-from wsproto.events import AcceptConnection
-from wsproto.events import CloseConnection
-from wsproto.events import Message
-from wsproto.events import Ping
+from wsproto import ConnectionType, WSConnection
+from wsproto.events import AcceptConnection, CloseConnection, Message, Ping
 from wsproto.events import Request as WSRequest
 from wsproto.events import TextMessage
 from wsproto.frame_protocol import CloseReason
+
+from werkzeug.exceptions import InternalServerError
+from werkzeug.serving import run_simple
+from werkzeug.wrappers import Request, Response
 
 
 @Request.application
@@ -55,8 +51,7 @@ def websocket(request):
                 # echo the incoming message back to the client
                 if event.data == "quit":
                     out_data += ws.send(
-                        CloseConnection(CloseReason.NORMAL_CLOSURE, "bye")
-                    )
+                        CloseConnection(CloseReason.NORMAL_CLOSURE, "bye"))
                     running = False
                 else:
                     out_data += ws.send(Message(data=event.data))

@@ -2,10 +2,7 @@
 from datetime import date
 
 from .database import Entry
-from .utils import expose
-from .utils import Pagination
-from .utils import render_template
-
+from .utils import Pagination, expose, render_template
 
 #: number of items per page
 PER_PAGE = 30

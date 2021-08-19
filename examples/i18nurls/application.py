@@ -1,9 +1,8 @@
 from os import path
 
-from jinja2 import Environment
-from jinja2 import PackageLoader
-from werkzeug.exceptions import HTTPException
-from werkzeug.exceptions import NotFound
+from jinja2 import Environment, PackageLoader
+
+from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.routing import RequestRedirect
 from werkzeug.wrappers import Request as BaseRequest
 from werkzeug.wrappers import Response as BaseResponse
@@ -16,7 +15,6 @@ views = {}
 
 def expose(name):
     """Register the function as view."""
-
     def wrapped(f):
         views[name] = f
         return f

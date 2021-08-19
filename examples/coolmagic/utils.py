@@ -2,22 +2,18 @@
 werkzeug. The subclasses know about their charset and implement some
 additional functionality like the ability to link to view functions.
 """
-from os.path import dirname
-from os.path import join
+from os.path import dirname, join
 
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
-from werkzeug.local import Local
-from werkzeug.local import LocalManager
+from jinja2 import Environment, FileSystemLoader
+
+from werkzeug.local import Local, LocalManager
 from werkzeug.wrappers import Request as BaseRequest
 from werkzeug.wrappers import Response as BaseResponse
-
 
 local = Local()
 local_manager = LocalManager([local])
 template_env = Environment(
-    loader=FileSystemLoader(join(dirname(__file__), "templates"))
-)
+    loader=FileSystemLoader(join(dirname(__file__), "templates")))
 exported_views = {}
 
 
@@ -26,7 +22,6 @@ def export(string, template=None, **extra):
     Decorator for registering view functions and adding
     templates to it.
     """
-
     def wrapped(f):
         endpoint = f"{f.__module__}.{f.__name__}"[16:]
         if template is not None:

@@ -1,16 +1,13 @@
 from couchdb.client import Server
-from werkzeug.exceptions import HTTPException
-from werkzeug.exceptions import NotFound
+
+from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.middleware.shared_data import SharedDataMiddleware
 from werkzeug.wrappers import Request
 from werkzeug.wsgi import ClosingIterator
 
 from . import views
 from .models import URL
-from .utils import local
-from .utils import local_manager
-from .utils import STATIC_PATH
-from .utils import url_map
+from .utils import STATIC_PATH, local, local_manager, url_map
 
 
 class Couchy:
@@ -22,7 +19,8 @@ class Couchy:
             db = server.create("urls")
         except Exception:
             db = server["urls"]
-        self.dispatch = SharedDataMiddleware(self.dispatch, {"/static": STATIC_PATH})
+        self.dispatch = SharedDataMiddleware(self.dispatch,
+                                             {"/static": STATIC_PATH})
 
         URL.db = db
 
@@ -39,9 +37,8 @@ class Couchy:
             response.status_code = 404
         except HTTPException as e:
             response = e
-        return ClosingIterator(
-            response(environ, start_response), [local_manager.cleanup]
-        )
+        return ClosingIterator(response(environ, start_response),
+                               [local_manager.cleanup])
 
     def __call__(self, environ, start_response):
         return self.dispatch(environ, start_response)

@@ -9,8 +9,14 @@ from werkzeug.sansio.request import Request
 @pytest.mark.parametrize(
     "headers, expected",
     [
-        (Headers({"Transfer-Encoding": "chunked", "Content-Length": "6"}), None),
-        (Headers({"Transfer-Encoding": "something", "Content-Length": "6"}), 6),
+        (Headers({
+            "Transfer-Encoding": "chunked",
+            "Content-Length": "6"
+        }), None),
+        (Headers({
+            "Transfer-Encoding": "something",
+            "Content-Length": "6"
+        }), 6),
         (Headers({"Content-Length": "6"}), 6),
         (Headers(), None),
     ],
@@ -21,7 +27,8 @@ def test_content_length(headers: Headers, expected: t.Optional[int]) -> None:
 
 
 def test_cookies() -> None:
-    headers = Headers([("Cookie", "a=b"), ("Content-Type", "text"), ("Cookie", "a=c")])
+    headers = Headers([("Cookie", "a=b"), ("Content-Type", "text"),
+                       ("Cookie", "a=c")])
     req = Request("GET", "http", None, "", "", b"", headers, None)
     assert req.cookies.get("a") == "b"
     assert req.cookies.getlist("a") == ["b", "c"]

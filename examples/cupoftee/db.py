@@ -2,8 +2,7 @@
 multiprocess mode that's good enough.
 """
 import dbm
-from pickle import dumps
-from pickle import loads
+from pickle import dumps, loads
 from threading import Lock
 
 

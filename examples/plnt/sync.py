@@ -4,12 +4,8 @@ from html import escape
 
 import feedparser
 
-from .database import Blog
-from .database import Entry
-from .database import session
-from .utils import nl2p
-from .utils import strip_tags
-
+from .database import Blog, Entry, session
+from .utils import nl2p, strip_tags
 
 HTML_MIMETYPES = {"text/html", "application/xhtml+xml"}
 
@@ -46,9 +42,8 @@ def sync():
             else:
                 title = entry.get("title")
             url = entry.get("link") or blog.blog_url
-            text = (
-                entry.content[0] if "content" in entry else entry.get("summary_detail")
-            )
+            text = (entry.content[0]
+                    if "content" in entry else entry.get("summary_detail"))
 
             if not title or not text:
                 continue
@@ -67,11 +62,9 @@ def sync():
 
             # get the pub date and updated date. This is rather complex
             # because different feeds do different stuff
-            pub_date = (
-                entry.get("published_parsed")
-                or entry.get("created_parsed")
-                or entry.get("date_parsed")
-            )
+            pub_date = (entry.get("published_parsed") or
+                        entry.get("created_parsed") or
+                        entry.get("date_parsed"))
             updated = entry.get("updated_parsed") or pub_date
             pub_date = pub_date or updated
 

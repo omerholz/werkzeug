@@ -2,10 +2,8 @@ import json
 import sys
 from importlib import import_module
 
-from werkzeug.serving import generate_adhoc_ssl_context
-from werkzeug.serving import run_simple
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.serving import generate_adhoc_ssl_context, run_simple
+from werkzeug.wrappers import Request, Response
 
 name = sys.argv[1]
 mod = import_module(f"{name}_app")

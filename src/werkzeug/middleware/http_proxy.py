@@ -12,14 +12,11 @@ from http import client
 
 from ..datastructures import EnvironHeaders
 from ..http import is_hop_by_hop_header
-from ..urls import url_parse
-from ..urls import url_quote
+from ..urls import url_parse, url_quote
 from ..wsgi import get_input_stream
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 
 class ProxyMiddleware:
@@ -92,27 +89,23 @@ class ProxyMiddleware:
 
         self.app = app
         self.targets = {
-            f"/{k.strip('/')}/": _set_defaults(v) for k, v in targets.items()
+            f"/{k.strip('/')}/": _set_defaults(v)
+            for k, v in targets.items()
         }
         self.chunk_size = chunk_size
         self.timeout = timeout
 
-    def proxy_to(
-        self, opts: t.Dict[str, t.Any], path: str, prefix: str
-    ) -> "WSGIApplication":
+    def proxy_to(self, opts: t.Dict[str, t.Any], path: str,
+                 prefix: str) -> "WSGIApplication":
         target = url_parse(opts["target"])
         host = t.cast(str, target.ascii_host)
 
-        def application(
-            environ: "WSGIEnvironment", start_response: "StartResponse"
-        ) -> t.Iterable[bytes]:
+        def application(environ: "WSGIEnvironment",
+                        start_response: "StartResponse") -> t.Iterable[bytes]:
             headers = list(EnvironHeaders(environ).items())
-            headers[:] = [
-                (k, v)
-                for k, v in headers
-                if not is_hop_by_hop_header(k)
-                and k.lower() not in ("content-length", "host")
-            ]
+            headers[:] = [(k, v) for k, v in headers
+                          if not is_hop_by_hop_header(k) and k.lower() not in (
+                              "content-length", "host")]
             headers.append(("Connection", "close"))
 
             if opts["host"] == "<auto>":
@@ -126,23 +119,24 @@ class ProxyMiddleware:
             remote_path = path
 
             if opts["remove_prefix"]:
-                remote_path = remote_path[len(prefix) :].lstrip("/")
+                remote_path = remote_path[len(prefix):].lstrip("/")
                 remote_path = f"{target.path.rstrip('/')}/{remote_path}"
 
             content_length = environ.get("CONTENT_LENGTH")
             chunked = False
 
             if content_length not in ("", None):
-                headers.append(("Content-Length", content_length))  # type: ignore
+                headers.append(
+                    ("Content-Length", content_length))  # type: ignore
             elif content_length is not None:
                 headers.append(("Transfer-Encoding", "chunked"))
                 chunked = True
 
             try:
                 if target.scheme == "http":
-                    con = client.HTTPConnection(
-                        host, target.port or 80, timeout=self.timeout
-                    )
+                    con = client.HTTPConnection(host,
+                                                target.port or 80,
+                                                timeout=self.timeout)
                 elif target.scheme == "https":
                     con = client.HTTPSConnection(
                         host,
@@ -153,8 +147,7 @@ class ProxyMiddleware:
                 else:
                     raise RuntimeError(
                         "Target scheme must be 'http' or 'https', got"
-                        f" {target.scheme!r}."
-                    )
+                        f" {target.scheme!r}.")
 
                 con.connect()
                 remote_url = url_quote(remote_path)
@@ -163,7 +156,9 @@ class ProxyMiddleware:
                 if querystring:
                     remote_url = f"{remote_url}?{querystring}"
 
-                con.putrequest(environ["REQUEST_METHOD"], remote_url, skip_host=True)
+                con.putrequest(environ["REQUEST_METHOD"],
+                               remote_url,
+                               skip_host=True)
 
                 for k, v in headers:
                     if k.lower() == "connection":
@@ -193,11 +188,8 @@ class ProxyMiddleware:
 
             start_response(
                 f"{resp.status} {resp.reason}",
-                [
-                    (k.title(), v)
-                    for k, v in resp.getheaders()
-                    if not is_hop_by_hop_header(k)
-                ],
+                [(k.title(), v)
+                 for k, v in resp.getheaders() if not is_hop_by_hop_header(k)],
             )
 
             def read() -> t.Iterator[bytes]:
@@ -216,9 +208,8 @@ class ProxyMiddleware:
 
         return application
 
-    def __call__(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def __call__(self, environ: "WSGIEnvironment",
+                 start_response: "StartResponse") -> t.Iterable[bytes]:
         path = environ["PATH_INFO"]
         app = self.app
 

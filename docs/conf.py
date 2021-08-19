@@ -1,5 +1,4 @@
-from pallets_sphinx_themes import get_version
-from pallets_sphinx_themes import ProjectLink
+from pallets_sphinx_themes import ProjectLink, get_version
 
 # Project --------------------------------------------------------------
 
@@ -31,17 +30,22 @@ html_context = {
         ProjectLink("Donate", "https://palletsprojects.com/donate"),
         ProjectLink("PyPI Releases", "https://pypi.org/project/Werkzeug/"),
         ProjectLink("Source Code", "https://github.com/pallets/werkzeug/"),
-        ProjectLink("Issue Tracker", "https://github.com/pallets/werkzeug/issues/"),
+        ProjectLink("Issue Tracker",
+                    "https://github.com/pallets/werkzeug/issues/"),
         ProjectLink("Website", "https://palletsprojects.com/p/werkzeug/"),
         ProjectLink("Twitter", "https://twitter.com/PalletsTeam"),
         ProjectLink("Chat", "https://discord.gg/pallets"),
     ]
 }
 html_sidebars = {
-    "index": ["project.html", "localtoc.html", "searchbox.html", "ethicalads.html"],
-    "**": ["localtoc.html", "relations.html", "searchbox.html", "ethicalads.html"],
+    "index":
+    ["project.html", "localtoc.html", "searchbox.html", "ethicalads.html"],
+    "**":
+    ["localtoc.html", "relations.html", "searchbox.html", "ethicalads.html"],
 }
-singlehtml_sidebars = {"index": ["project.html", "localtoc.html", "ethicalads.html"]}
+singlehtml_sidebars = {
+    "index": ["project.html", "localtoc.html", "ethicalads.html"]
+}
 html_static_path = ["_static"]
 html_favicon = "_static/favicon.ico"
 html_logo = "_static/werkzeug.png"
@@ -50,6 +54,5 @@ html_show_sourcelink = False
 
 # LaTeX ----------------------------------------------------------------
 
-latex_documents = [
-    (master_doc, f"Werkzeug-{version}.tex", html_title, author, "manual")
-]
+latex_documents = [(master_doc, f"Werkzeug-{version}.tex", html_title, author,
+                    "manual")]

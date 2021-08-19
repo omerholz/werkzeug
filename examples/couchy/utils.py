@@ -1,13 +1,10 @@
 from os import path
-from random import randrange
-from random import sample
+from random import randrange, sample
 
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
-from werkzeug.local import Local
-from werkzeug.local import LocalManager
-from werkzeug.routing import Map
-from werkzeug.routing import Rule
+from jinja2 import Environment, FileSystemLoader
+
+from werkzeug.local import Local, LocalManager
+from werkzeug.routing import Map, Rule
 from werkzeug.urls import url_parse
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import Response
@@ -43,9 +40,8 @@ jinja_env.globals["url_for"] = url_for
 
 
 def render_template(template, **context):
-    return Response(
-        jinja_env.get_template(template).render(**context), mimetype="text/html"
-    )
+    return Response(jinja_env.get_template(template).render(**context),
+                    mimetype="text/html")
 
 
 def validate_url(url):
@@ -69,11 +65,8 @@ class Pagination:
 
     @cached_property
     def entries(self):
-        return self.results[
-            ((self.page - 1) * self.per_page) : (
-                ((self.page - 1) * self.per_page) + self.per_page
-            )
-        ]
+        return self.results[((self.page - 1) * self.per_page):((
+            (self.page - 1) * self.per_page) + self.per_page)]
 
     @property
     def has_previous(self):

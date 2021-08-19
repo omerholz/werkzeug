@@ -2,8 +2,7 @@ import typing as t
 
 from .._internal import _encode_idna
 from ..exceptions import SecurityError
-from ..urls import uri_to_iri
-from ..urls import url_quote
+from ..urls import uri_to_iri, url_quote
 
 
 def host_is_trusted(hostname: str, trusted_list: t.Iterable[str]) -> bool:

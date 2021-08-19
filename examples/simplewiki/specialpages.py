@@ -1,10 +1,7 @@
 """Special pages such as the recent changes page."""
 from .actions import page_missing
-from .database import Page
-from .database import RevisionedPage
-from .utils import generate_template
-from .utils import Pagination
-from .utils import Response
+from .database import Page, RevisionedPage
+from .utils import Pagination, Response, generate_template
 
 
 def page_index(request):
@@ -13,8 +10,7 @@ def page_index(request):
     for page in Page.query.order_by(Page.name):
         letters.setdefault(page.name.capitalize()[0], []).append(page)
     return Response(
-        generate_template("page_index.html", letters=sorted(letters.items()))
-    )
+        generate_template("page_index.html", letters=sorted(letters.items())))
 
 
 def recent_changes(request):
@@ -25,8 +21,7 @@ def recent_changes(request):
         generate_template(
             "recent_changes.html",
             pagination=Pagination(query, 20, page, "Special:Recent_Changes"),
-        )
-    )
+        ))
 
 
 def page_not_found(request, page_name):

@@ -13,19 +13,21 @@ from html.entities import name2codepoint
 from time import time
 from zlib import adler32
 
-from ._internal import _DictAccessorProperty
-from ._internal import _missing
-from ._internal import _parse_signature
-from ._internal import _TAccessorValue
+from ._internal import (
+    _DictAccessorProperty,
+    _missing,
+    _parse_signature,
+    _TAccessorValue,
+)
 from .datastructures import Headers
-from .exceptions import NotFound
-from .exceptions import RequestedRangeNotSatisfiable
+from .exceptions import NotFound, RequestedRangeNotSatisfiable
 from .security import safe_join
 from .urls import url_quote
 from .wsgi import wrap_file
 
 if t.TYPE_CHECKING:
     from _typeshed.wsgi import WSGIEnvironment
+
     from .wrappers.request import Request
     from .wrappers.response import Response
 
@@ -289,7 +291,8 @@ class HTMLBuilder:
                 return buffer
             buffer += ">"
 
-            children_as_string = "".join([str(x) for x in children if x is not None])
+            children_as_string = "".join(
+                [str(x) for x in children if x is not None])
 
             if children_as_string:
                 if tag in self._plaintext_elements:
@@ -336,11 +339,8 @@ def get_content_type(mimetype: str, charset: str) -> str:
         that start with ``application/``. Known text types such as
         ``application/javascript`` are also given charsets.
     """
-    if (
-        mimetype.startswith("text/")
-        or mimetype in _charset_mimetypes
-        or mimetype.endswith("+xml")
-    ):
+    if (mimetype.startswith("text/") or mimetype in _charset_mimetypes or
+            mimetype.endswith("+xml")):
         mimetype += f"; charset={charset}"
 
     return mimetype
@@ -459,18 +459,14 @@ def secure_filename(filename: str) -> str:
     for sep in os.path.sep, os.path.altsep:
         if sep:
             filename = filename.replace(sep, " ")
-    filename = str(_filename_ascii_strip_re.sub("", "_".join(filename.split()))).strip(
-        "._"
-    )
+    filename = str(_filename_ascii_strip_re.sub("", "_".join(
+        filename.split()))).strip("._")
 
     # on nt a couple of special files are present in each folder.  We
     # have to ensure that the target file is not such a filename.  In
     # this case we prepend an underline
-    if (
-        os.name == "nt"
-        and filename
-        and filename.split(".")[0].upper() in _windows_device_files
-    ):
+    if (os.name == "nt" and filename and
+            filename.split(".")[0].upper() in _windows_device_files):
         filename = f"_{filename}"
 
     return filename
@@ -524,9 +520,9 @@ def unescape(s: str) -> str:
     return html.unescape(s)
 
 
-def redirect(
-    location: str, code: int = 302, Response: t.Optional[t.Type["Response"]] = None
-) -> "Response":
+def redirect(location: str,
+             code: int = 302,
+             Response: t.Optional[t.Type["Response"]] = None) -> "Response":
     """Returns a response object (a WSGI application) that, if called,
     redirects the client to the target location. Supported codes are
     301, 302, 303, 305, 307, and 308. 300 is not supported because
@@ -572,7 +568,8 @@ def redirect(
     return response
 
 
-def append_slash_redirect(environ: "WSGIEnvironment", code: int = 301) -> "Response":
+def append_slash_redirect(environ: "WSGIEnvironment",
+                          code: int = 301) -> "Response":
     """Redirects to the same URL but with a slash appended.  The behavior
     of this function is undefined if the path ends with a slash already.
 
@@ -596,9 +593,8 @@ def send_file(
     conditional: bool = True,
     etag: t.Union[bool, str] = True,
     last_modified: t.Optional[t.Union[datetime, int, float]] = None,
-    max_age: t.Optional[
-        t.Union[int, t.Callable[[t.Optional[str]], t.Optional[int]]]
-    ] = None,
+    max_age: t.Optional[t.Union[int, t.Callable[[t.Optional[str]],
+                                                t.Optional[int]]]] = None,
     use_x_sendfile: bool = False,
     response_class: t.Optional[t.Type["Response"]] = None,
     _root_path: t.Optional[t.Union[os.PathLike, str]] = None,
@@ -686,9 +682,8 @@ def send_file(
     mtime: t.Optional[float] = None
     headers = Headers()
 
-    if isinstance(path_or_file, (os.PathLike, str)) or hasattr(
-        path_or_file, "__fspath__"
-    ):
+    if isinstance(path_or_file,
+                  (os.PathLike, str)) or hasattr(path_or_file, "__fspath__"):
         path_or_file = t.cast(t.Union[os.PathLike, str], path_or_file)
 
         # Flask will pass app.root_path, allowing its send_file wrapper
@@ -712,8 +707,7 @@ def send_file(
             raise TypeError(
                 "Unable to detect the MIME type because a file name is"
                 " not available. Either set 'download_name', pass a"
-                " path instead of a file, or set 'mimetype'."
-            )
+                " path instead of a file, or set 'mimetype'.")
 
         mimetype, encoding = mimetypes.guess_type(download_name)
 
@@ -739,10 +733,8 @@ def send_file(
         value = "attachment" if as_attachment else "inline"
         headers.set("Content-Disposition", value, **names)
     elif as_attachment:
-        raise TypeError(
-            "No name provided for attachment. Either set"
-            " 'download_name' or pass a path instead of a file."
-        )
+        raise TypeError("No name provided for attachment. Either set"
+                        " 'download_name' or pass a path instead of a file.")
 
     if use_x_sendfile and path is not None:
         headers["X-Sendfile"] = path
@@ -753,13 +745,15 @@ def send_file(
         elif isinstance(file, io.BytesIO):
             size = file.getbuffer().nbytes
         elif isinstance(file, io.TextIOBase):
-            raise ValueError("Files must be opened in binary mode or use BytesIO.")
+            raise ValueError(
+                "Files must be opened in binary mode or use BytesIO.")
 
         data = wrap_file(environ, file)
 
-    rv = response_class(
-        data, mimetype=mimetype, headers=headers, direct_passthrough=True
-    )
+    rv = response_class(data,
+                        mimetype=mimetype,
+                        headers=headers,
+                        direct_passthrough=True)
 
     if size is not None:
         rv.content_length = size
@@ -792,7 +786,9 @@ def send_file(
 
     if conditional:
         try:
-            rv = rv.make_conditional(environ, accept_ranges=True, complete_length=size)
+            rv = rv.make_conditional(environ,
+                                     accept_ranges=True,
+                                     complete_length=size)
         except RequestedRangeNotSatisfiable:
             if file is not None:
                 file.close()
@@ -884,14 +880,15 @@ def import_string(import_name: str, silent: bool = False) -> t.Any:
 
     except ImportError as e:
         if not silent:
-            raise ImportStringError(import_name, e).with_traceback(sys.exc_info()[2])
+            raise ImportStringError(import_name,
+                                    e).with_traceback(sys.exc_info()[2])
 
     return None
 
 
-def find_modules(
-    import_path: str, include_packages: bool = False, recursive: bool = False
-) -> t.Iterator[str]:
+def find_modules(import_path: str,
+                 include_packages: bool = False,
+                 recursive: bool = False) -> t.Iterator[str]:
     """Finds all the modules below a package.  This can be useful to
     automatically import all views / controllers so that their metaclasses /
     function decorators have a chance to register themselves on the
@@ -1032,7 +1029,8 @@ def bind_arguments(func, args, kwargs):  # type: ignore
             )
         values[kwarg_var] = extra
     elif extra:
-        raise TypeError(f"got unexpected keyword argument {next(iter(extra))!r}")
+        raise TypeError(
+            f"got unexpected keyword argument {next(iter(extra))!r}")
     return values
 
 
@@ -1044,15 +1042,17 @@ class ArgumentValidationError(ValueError):
         ``validate_arguments``.
     """
 
-    def __init__(self, missing=None, extra=None, extra_positional=None):  # type: ignore
+    def __init__(self,
+                 missing=None,
+                 extra=None,
+                 extra_positional=None):  # type: ignore
         self.missing = set(missing or ())
         self.extra = extra or {}
         self.extra_positional = extra_positional or []
         super().__init__(
             "function arguments invalid."
             f" ({len(self.missing)} missing,"
-            f" {len(self.extra) + len(self.extra_positional)} additional)"
-        )
+            f" {len(self.extra) + len(self.extra_positional)} additional)")
 
 
 class ImportStringError(ImportError):

@@ -5,8 +5,7 @@ import pytest
 
 from werkzeug import utils
 from werkzeug.datastructures import Headers
-from werkzeug.http import http_date
-from werkzeug.http import parse_date
+from werkzeug.http import http_date, parse_date
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 
@@ -34,9 +33,8 @@ def test_redirect_xss():
 
     location = 'http://example.com/?xss="onmouseover="alert(1)'
     resp = utils.redirect(location)
-    assert (
-        b'href="http://example.com/?xss="onmouseover="alert(1)"' not in resp.get_data()
-    )
+    assert (b'href="http://example.com/?xss="onmouseover="alert(1)"'
+            not in resp.get_data())
 
 
 def test_redirect_with_custom_response_class():
@@ -142,9 +140,11 @@ def test_environ_property():
         read_only = utils.environ_property("number")
         number = utils.environ_property("number", load_func=int)
         broken_number = utils.environ_property("broken_number", load_func=int)
-        date = utils.environ_property(
-            "date", None, parse_date, http_date, read_only=False
-        )
+        date = utils.environ_property("date",
+                                      None,
+                                      parse_date,
+                                      http_date,
+                                      read_only=False)
         foo = utils.environ_property("foo")
 
     a = A()
@@ -164,6 +164,7 @@ def test_environ_property():
 
 def test_import_string():
     from datetime import date
+
     from werkzeug.debug import DebuggedApplication
 
     assert utils.import_string("datetime.date") is date
@@ -171,9 +172,8 @@ def test_import_string():
     assert utils.import_string("datetime:date") is date
     assert utils.import_string("XXXXXXXXXXXX", True) is None
     assert utils.import_string("datetime.XXXXXXXXXXXX", True) is None
-    assert (
-        utils.import_string("werkzeug.debug.DebuggedApplication") is DebuggedApplication
-    )
+    assert (utils.import_string("werkzeug.debug.DebuggedApplication") is
+            DebuggedApplication)
     pytest.raises(ImportError, utils.import_string, "XXXXXXXXXXXXXXXX")
     pytest.raises(ImportError, utils.import_string, "datetime.XXXXXXXXXX")
 
@@ -223,17 +223,16 @@ def test_find_modules():
 
 
 def test_header_set_duplication_bug():
-    headers = Headers([("Content-Type", "text/html"), ("Foo", "bar"), ("Blub", "blah")])
+    headers = Headers([("Content-Type", "text/html"), ("Foo", "bar"),
+                       ("Blub", "blah")])
     headers["blub"] = "hehe"
     headers["blafasel"] = "humm"
-    assert headers == Headers(
-        [
-            ("Content-Type", "text/html"),
-            ("Foo", "bar"),
-            ("blub", "hehe"),
-            ("blafasel", "humm"),
-        ]
-    )
+    assert headers == Headers([
+        ("Content-Type", "text/html"),
+        ("Foo", "bar"),
+        ("blub", "hehe"),
+        ("blafasel", "humm"),
+    ])
 
 
 def test_append_slash_redirect():
@@ -260,9 +259,7 @@ def test_cached_property_doc():
 def test_secure_filename():
     assert utils.secure_filename("My cool movie.mov") == "My_cool_movie.mov"
     assert utils.secure_filename("../../../etc/passwd") == "etc_passwd"
-    assert (
-        utils.secure_filename("i contain cool \xfcml\xe4uts.txt")
-        == "i_contain_cool_umlauts.txt"
-    )
+    assert (utils.secure_filename("i contain cool \xfcml\xe4uts.txt") ==
+            "i_contain_cool_umlauts.txt")
     assert utils.secure_filename("__filename__") == "filename"
     assert utils.secure_filename("foo$&^*)bar") == "foobar"

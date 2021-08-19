@@ -1,6 +1,4 @@
-from .application import expose
-from .application import Response
-from .application import TemplateResponse
+from .application import Response, TemplateResponse, expose
 
 
 @expose("index")
@@ -20,9 +18,10 @@ def blog_index(req):
 
 @expose("blog/show")
 def blog_show(req, post_id):
-    return TemplateResponse(
-        "blog.html", title=f"Blog Post #{post_id}", post_id=post_id, mode="show"
-    )
+    return TemplateResponse("blog.html",
+                            title=f"Blog Post #{post_id}",
+                            post_id=post_id,
+                            mode="show")
 
 
 def page_not_found(req):

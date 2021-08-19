@@ -61,11 +61,11 @@ class _UserAgentParser:
     _browser_version_re = r"(?:{pattern})[/\sa-z(]*(\d+[.\da-z]+)?"
     _language_re = re.compile(
         r"(?:;\s*|\s+)(\b\w{2}\b(?:-\b\w{2}\b)?)\s*;|"
-        r"(?:\(|\[|;)\s*(\b\w{2}\b(?:-\b\w{2}\b)?)\s*(?:\]|\)|;)"
-    )
+        r"(?:\(|\[|;)\s*(\b\w{2}\b(?:-\b\w{2}\b)?)\s*(?:\]|\)|;)")
 
     def __init__(self) -> None:
-        self.platforms = [(b, re.compile(a, re.I)) for a, b in self.platform_rules]
+        self.platforms = [(b, re.compile(a, re.I))
+                          for a, b in self.platform_rules]
         self.browsers = [
             (b, re.compile(self._browser_version_re.format(pattern=a), re.I))
             for a, b in self.browser_rules
@@ -73,7 +73,8 @@ class _UserAgentParser:
 
     def __call__(
         self, user_agent: str
-    ) -> t.Tuple[t.Optional[str], t.Optional[str], t.Optional[str], t.Optional[str]]:
+    ) -> t.Tuple[t.Optional[str], t.Optional[str], t.Optional[str],
+                 t.Optional[str]]:
         platform: t.Optional[str]
         browser: t.Optional[str]
         version: t.Optional[str]
@@ -88,11 +89,8 @@ class _UserAgentParser:
 
         # Except for Trident, all browser key words come after the last ')'
         last_closing_paren = 0
-        if (
-            not re.compile(r"trident/.+? rv:", re.I).search(user_agent)
-            and ")" in user_agent
-            and user_agent[-1] != ")"
-        ):
+        if (not re.compile(r"trident/.+? rv:", re.I).search(user_agent) and
+                ")" in user_agent and user_agent[-1] != ")"):
             last_closing_paren = user_agent.rindex(")")
 
         for browser, regex in self.browsers:  # noqa: B007
@@ -138,8 +136,7 @@ class _deprecated_property(property):
             f" removed in Werkzeug 2.1. The {fget.__name__!r} property"
             " will be 'None'. Subclass 'werkzeug.user_agent.UserAgent'"
             " and set 'Request.user_agent_class' to use a different"
-            " parser."
-        )
+            " parser.")
 
     def __get__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
         warnings.warn(self.message, DeprecationWarning, stacklevel=3)
@@ -192,7 +189,8 @@ class UserAgent(_UserAgent):
         Passing a WSGI environ is deprecated and will be removed in 2.1.
     """
 
-    def __init__(self, environ_or_string: "t.Union[str, WSGIEnvironment]") -> None:
+    def __init__(self,
+                 environ_or_string: "t.Union[str, WSGIEnvironment]") -> None:
         if isinstance(environ_or_string, dict):
             warnings.warn(
                 "Passing an environ to 'UserAgent' is deprecated and"

@@ -1,10 +1,8 @@
 import pytest
 
 from werkzeug.middleware.proxy_fix import ProxyFix
-from werkzeug.routing import Map
-from werkzeug.routing import Rule
-from werkzeug.test import Client
-from werkzeug.test import create_environ
+from werkzeug.routing import Map, Rule
+from werkzeug.test import Client, create_environ
 from werkzeug.utils import redirect
 from werkzeug.wrappers import Request
 
@@ -25,25 +23,37 @@ from werkzeug.wrappers import Request
         ),
         pytest.param(
             {"x_proto": 1},
-            {"HTTP_HOST": "spam", "HTTP_X_FORWARDED_PROTO": "https"},
+            {
+                "HTTP_HOST": "spam",
+                "HTTP_X_FORWARDED_PROTO": "https"
+            },
             "https://spam/",
             id="proto",
         ),
         pytest.param(
             {"x_host": 1},
-            {"HTTP_HOST": "spam", "HTTP_X_FORWARDED_HOST": "eggs"},
+            {
+                "HTTP_HOST": "spam",
+                "HTTP_X_FORWARDED_HOST": "eggs"
+            },
             "http://eggs/",
             id="host",
         ),
         pytest.param(
             {"x_port": 1},
-            {"HTTP_HOST": "spam", "HTTP_X_FORWARDED_PORT": "8080"},
+            {
+                "HTTP_HOST": "spam",
+                "HTTP_X_FORWARDED_PORT": "8080"
+            },
             "http://spam:8080/",
             id="port, host without port",
         ),
         pytest.param(
             {"x_port": 1},
-            {"HTTP_HOST": "spam:9000", "HTTP_X_FORWARDED_PORT": "8080"},
+            {
+                "HTTP_HOST": "spam:9000",
+                "HTTP_X_FORWARDED_PORT": "8080"
+            },
             "http://spam:8080/",
             id="port, host with port",
         ),
@@ -59,12 +69,21 @@ from werkzeug.wrappers import Request
         ),
         pytest.param(
             {"x_prefix": 1},
-            {"HTTP_HOST": "spam", "HTTP_X_FORWARDED_PREFIX": "/eggs"},
+            {
+                "HTTP_HOST": "spam",
+                "HTTP_X_FORWARDED_PREFIX": "/eggs"
+            },
             "http://spam/eggs/",
             id="prefix",
         ),
         pytest.param(
-            {"x_for": 1, "x_proto": 1, "x_host": 1, "x_port": 1, "x_prefix": 1},
+            {
+                "x_for": 1,
+                "x_proto": 1,
+                "x_host": 1,
+                "x_port": 1,
+                "x_prefix": 1
+            },
             {
                 "REMOTE_ADDR": "192.168.0.2",
                 "HTTP_HOST": "spam:9000",
@@ -128,7 +147,10 @@ from werkzeug.wrappers import Request
             id="ignore empty",
         ),
         pytest.param(
-            {"x_for": 2, "x_prefix": 1},
+            {
+                "x_for": 2,
+                "x_prefix": 1
+            },
             {
                 "REMOTE_ADDR": "192.168.0.2",
                 "HTTP_HOST": "spam",
@@ -151,7 +173,8 @@ def test_proxy_fix(kwargs, base, url_root):
         urls = url_map.bind_to_environ(request.environ)
         parrot_url = urls.build("parrot")
         # build includes prefix
-        assert urls.build("parrot") == "/".join((request.script_root, "parrot"))
+        assert urls.build("parrot") == "/".join(
+            (request.script_root, "parrot"))
         # match doesn't include prefix
         assert urls.match("/parrot")[0] == "parrot"
 

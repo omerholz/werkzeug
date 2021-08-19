@@ -1,7 +1,7 @@
 import click
-from werkzeug.serving import run_simple
-
 from coolmagic import make_app
+
+from werkzeug.serving import run_simple
 
 
 @click.group()
@@ -10,14 +10,19 @@ def cli():
 
 
 @cli.command()
-@click.option("-h", "--hostname", type=str, default="localhost", help="localhost")
+@click.option("-h",
+              "--hostname",
+              type=str,
+              default="localhost",
+              help="localhost")
 @click.option("-p", "--port", type=int, default=5000, help="5000")
 @click.option("--no-reloader", is_flag=True, default=False)
 @click.option("--debugger", is_flag=True)
 @click.option("--no-evalex", is_flag=True, default=False)
 @click.option("--threaded", is_flag=True)
 @click.option("--processes", type=int, default=1, help="1")
-def runserver(hostname, port, no_reloader, debugger, no_evalex, threaded, processes):
+def runserver(hostname, port, no_reloader, debugger, no_evalex, threaded,
+              processes):
     """Start a new development server."""
     app = make_app()
     reloader = not no_reloader

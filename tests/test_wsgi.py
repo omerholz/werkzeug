@@ -5,50 +5,67 @@ import os
 import pytest
 
 from werkzeug import wsgi
-from werkzeug.exceptions import BadRequest
-from werkzeug.exceptions import ClientDisconnected
-from werkzeug.test import Client
-from werkzeug.test import create_environ
-from werkzeug.test import run_wsgi_app
+from werkzeug.exceptions import BadRequest, ClientDisconnected
+from werkzeug.test import Client, create_environ, run_wsgi_app
 from werkzeug.wrappers import Response
-from werkzeug.wsgi import _RangeWrapper
-from werkzeug.wsgi import ClosingIterator
-from werkzeug.wsgi import wrap_file
+from werkzeug.wsgi import ClosingIterator, _RangeWrapper, wrap_file
 
 
 @pytest.mark.parametrize(
     ("environ", "expect"),
     (
         pytest.param({"HTTP_HOST": "spam"}, "spam", id="host"),
-        pytest.param({"HTTP_HOST": "spam:80"}, "spam", id="host, strip http port"),
         pytest.param(
-            {"wsgi.url_scheme": "https", "HTTP_HOST": "spam:443"},
+            {"HTTP_HOST": "spam:80"}, "spam", id="host, strip http port"),
+        pytest.param(
+            {
+                "wsgi.url_scheme": "https",
+                "HTTP_HOST": "spam:443"
+            },
             "spam",
             id="host, strip https port",
         ),
-        pytest.param({"HTTP_HOST": "spam:8080"}, "spam:8080", id="host, custom port"),
         pytest.param(
-            {"HTTP_HOST": "spam", "SERVER_NAME": "eggs", "SERVER_PORT": "80"},
+            {"HTTP_HOST": "spam:8080"}, "spam:8080", id="host, custom port"),
+        pytest.param(
+            {
+                "HTTP_HOST": "spam",
+                "SERVER_NAME": "eggs",
+                "SERVER_PORT": "80"
+            },
             "spam",
             id="prefer host",
         ),
         pytest.param(
-            {"SERVER_NAME": "eggs", "SERVER_PORT": "80"},
+            {
+                "SERVER_NAME": "eggs",
+                "SERVER_PORT": "80"
+            },
             "eggs",
             id="name, ignore http port",
         ),
         pytest.param(
-            {"wsgi.url_scheme": "https", "SERVER_NAME": "eggs", "SERVER_PORT": "443"},
+            {
+                "wsgi.url_scheme": "https",
+                "SERVER_NAME": "eggs",
+                "SERVER_PORT": "443"
+            },
             "eggs",
             id="name, ignore https port",
         ),
         pytest.param(
-            {"SERVER_NAME": "eggs", "SERVER_PORT": "8080"},
+            {
+                "SERVER_NAME": "eggs",
+                "SERVER_PORT": "8080"
+            },
             "eggs:8080",
             id="name, custom port",
         ),
         pytest.param(
-            {"HTTP_HOST": "ham", "HTTP_X_FORWARDED_HOST": "eggs"},
+            {
+                "HTTP_HOST": "ham",
+                "HTTP_X_FORWARDED_HOST": "eggs"
+            },
             "ham",
             id="ignore x-forwarded-host",
         ),
@@ -60,15 +77,29 @@ def test_get_host(environ, expect):
 
 
 def test_get_host_validate_trusted_hosts():
-    env = {"SERVER_NAME": "example.org", "SERVER_PORT": "80", "wsgi.url_scheme": "http"}
+    env = {
+        "SERVER_NAME": "example.org",
+        "SERVER_PORT": "80",
+        "wsgi.url_scheme": "http"
+    }
     assert wsgi.get_host(env, trusted_hosts=[".example.org"]) == "example.org"
-    pytest.raises(BadRequest, wsgi.get_host, env, trusted_hosts=["example.com"])
+    pytest.raises(BadRequest,
+                  wsgi.get_host,
+                  env,
+                  trusted_hosts=["example.com"])
     env["SERVER_PORT"] = "8080"
-    assert wsgi.get_host(env, trusted_hosts=[".example.org:8080"]) == "example.org:8080"
-    pytest.raises(BadRequest, wsgi.get_host, env, trusted_hosts=[".example.com"])
+    assert wsgi.get_host(env, trusted_hosts=[".example.org:8080"
+                                             ]) == "example.org:8080"
+    pytest.raises(BadRequest,
+                  wsgi.get_host,
+                  env,
+                  trusted_hosts=[".example.com"])
     env = {"HTTP_HOST": "example.org", "wsgi.url_scheme": "http"}
     assert wsgi.get_host(env, trusted_hosts=[".example.org"]) == "example.org"
-    pytest.raises(BadRequest, wsgi.get_host, env, trusted_hosts=["example.com"])
+    pytest.raises(BadRequest,
+                  wsgi.get_host,
+                  env,
+                  trusted_hosts=["example.com"])
 
 
 def test_responder():
@@ -223,15 +254,14 @@ def test_limited_stream_disconnection():
 def test_path_info_extraction():
     x = wsgi.extract_path_info("http://example.com/app", "/app/hello")
     assert x == "/hello"
-    x = wsgi.extract_path_info(
-        "http://example.com/app", "https://example.com/app/hello"
-    )
+    x = wsgi.extract_path_info("http://example.com/app",
+                               "https://example.com/app/hello")
     assert x == "/hello"
-    x = wsgi.extract_path_info(
-        "http://example.com/app/", "https://example.com/app/hello"
-    )
+    x = wsgi.extract_path_info("http://example.com/app/",
+                               "https://example.com/app/hello")
     assert x == "/hello"
-    x = wsgi.extract_path_info("http://example.com/app/", "https://example.com/app")
+    x = wsgi.extract_path_info("http://example.com/app/",
+                               "https://example.com/app")
     assert x == "/"
     x = wsgi.extract_path_info("http://☃.net/", "/fööbär")
     assert x == "/fööbär"
@@ -242,7 +272,8 @@ def test_path_info_extraction():
     x = wsgi.extract_path_info(env, "http://☃.net/x/fööbär")
     assert x == "/fööbär"
 
-    x = wsgi.extract_path_info("http://example.com/app/", "https://example.com/a/hello")
+    x = wsgi.extract_path_info("http://example.com/app/",
+                               "https://example.com/a/hello")
     assert x is None
     x = wsgi.extract_path_info(
         "http://example.com/app/",
@@ -253,26 +284,16 @@ def test_path_info_extraction():
 
 
 def test_get_host_fallback():
-    assert (
-        wsgi.get_host(
-            {
-                "SERVER_NAME": "foobar.example.com",
-                "wsgi.url_scheme": "http",
-                "SERVER_PORT": "80",
-            }
-        )
-        == "foobar.example.com"
-    )
-    assert (
-        wsgi.get_host(
-            {
-                "SERVER_NAME": "foobar.example.com",
-                "wsgi.url_scheme": "http",
-                "SERVER_PORT": "81",
-            }
-        )
-        == "foobar.example.com:81"
-    )
+    assert (wsgi.get_host({
+        "SERVER_NAME": "foobar.example.com",
+        "wsgi.url_scheme": "http",
+        "SERVER_PORT": "80",
+    }) == "foobar.example.com")
+    assert (wsgi.get_host({
+        "SERVER_NAME": "foobar.example.com",
+        "wsgi.url_scheme": "http",
+        "SERVER_PORT": "81",
+    }) == "foobar.example.com:81")
 
 
 def test_get_current_url_unicode():
@@ -293,12 +314,16 @@ def test_get_current_url_invalid_utf8():
 def test_multi_part_line_breaks():
     data = "abcdef\r\nghijkl\r\nmnopqrstuvwxyz\r\nABCDEFGHIJK"
     test_stream = io.StringIO(data)
-    lines = list(wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=16))
-    assert lines == ["abcdef\r\n", "ghijkl\r\n", "mnopqrstuvwxyz\r\n", "ABCDEFGHIJK"]
+    lines = list(
+        wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=16))
+    assert lines == [
+        "abcdef\r\n", "ghijkl\r\n", "mnopqrstuvwxyz\r\n", "ABCDEFGHIJK"
+    ]
 
     data = "abc\r\nThis line is broken by the buffer length.\r\nFoo bar baz"
     test_stream = io.StringIO(data)
-    lines = list(wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=24))
+    lines = list(
+        wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=24))
     assert lines == [
         "abc\r\n",
         "This line is broken by the buffer length.\r\n",
@@ -309,7 +334,8 @@ def test_multi_part_line_breaks():
 def test_multi_part_line_breaks_bytes():
     data = b"abcdef\r\nghijkl\r\nmnopqrstuvwxyz\r\nABCDEFGHIJK"
     test_stream = io.BytesIO(data)
-    lines = list(wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=16))
+    lines = list(
+        wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=16))
     assert lines == [
         b"abcdef\r\n",
         b"ghijkl\r\n",
@@ -319,7 +345,8 @@ def test_multi_part_line_breaks_bytes():
 
     data = b"abc\r\nThis line is broken by the buffer length.\r\nFoo bar baz"
     test_stream = io.BytesIO(data)
-    lines = list(wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=24))
+    lines = list(
+        wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=24))
     assert lines == [
         b"abc\r\n",
         b"This line is broken by the buffer length.\r\n",
@@ -331,14 +358,17 @@ def test_multi_part_line_breaks_problematic():
     data = "abc\rdef\r\nghi"
     for _ in range(1, 10):
         test_stream = io.StringIO(data)
-        lines = list(wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=4))
+        lines = list(
+            wsgi.make_line_iter(test_stream, limit=len(data), buffer_size=4))
         assert lines == ["abc\r", "def\r\n", "ghi"]
 
 
 def test_iter_functions_support_iterators():
     data = ["abcdef\r\nghi", "jkl\r\nmnopqrstuvwxyz\r", "\nABCDEFGHIJK"]
     lines = list(wsgi.make_line_iter(data))
-    assert lines == ["abcdef\r\n", "ghijkl\r\n", "mnopqrstuvwxyz\r\n", "ABCDEFGHIJK"]
+    assert lines == [
+        "abcdef\r\n", "ghijkl\r\n", "mnopqrstuvwxyz\r\n", "ABCDEFGHIJK"
+    ]
 
 
 def test_make_chunk_iter():
@@ -348,7 +378,8 @@ def test_make_chunk_iter():
 
     data = "abcdefXghijklXmnopqrstuvwxyzXABCDEFGHIJK"
     test_stream = io.StringIO(data)
-    rv = list(wsgi.make_chunk_iter(test_stream, "X", limit=len(data), buffer_size=4))
+    rv = list(
+        wsgi.make_chunk_iter(test_stream, "X", limit=len(data), buffer_size=4))
     assert rv == ["abcdef", "ghijkl", "mnopqrstuvwxyz", "ABCDEFGHIJK"]
 
 
@@ -359,16 +390,18 @@ def test_make_chunk_iter_bytes():
 
     data = b"abcdefXghijklXmnopqrstuvwxyzXABCDEFGHIJK"
     test_stream = io.BytesIO(data)
-    rv = list(wsgi.make_chunk_iter(test_stream, "X", limit=len(data), buffer_size=4))
+    rv = list(
+        wsgi.make_chunk_iter(test_stream, "X", limit=len(data), buffer_size=4))
     assert rv == [b"abcdef", b"ghijkl", b"mnopqrstuvwxyz", b"ABCDEFGHIJK"]
 
     data = b"abcdefXghijklXmnopqrstuvwxyzXABCDEFGHIJK"
     test_stream = io.BytesIO(data)
     rv = list(
-        wsgi.make_chunk_iter(
-            test_stream, "X", limit=len(data), buffer_size=4, cap_at_buffer=True
-        )
-    )
+        wsgi.make_chunk_iter(test_stream,
+                             "X",
+                             limit=len(data),
+                             buffer_size=4,
+                             cap_at_buffer=True))
     assert rv == [
         b"abcd",
         b"ef",
@@ -388,8 +421,9 @@ def test_lines_longer_buffer_size():
     data = "1234567890\n1234567890\n"
     for bufsize in range(1, 15):
         lines = list(
-            wsgi.make_line_iter(io.StringIO(data), limit=len(data), buffer_size=bufsize)
-        )
+            wsgi.make_line_iter(io.StringIO(data),
+                                limit=len(data),
+                                buffer_size=bufsize))
         assert lines == ["1234567890\n", "1234567890\n"]
 
 
@@ -402,8 +436,7 @@ def test_lines_longer_buffer_size_cap():
                 limit=len(data),
                 buffer_size=bufsize,
                 cap_at_buffer=True,
-            )
-        )
+            ))
         assert len(lines[0]) == bufsize or lines[0].endswith("\n")
 
 
@@ -484,7 +517,9 @@ def test_closing_iterator():
     def app(environ, start_response):
         return ClosingIterator(Response(environ, start_response), additional)
 
-    app_iter, status, headers = run_wsgi_app(app, create_environ(), buffered=True)
+    app_iter, status, headers = run_wsgi_app(app,
+                                             create_environ(),
+                                             buffered=True)
 
     assert "".join(app_iter) == "some content"
     assert Namespace.got_close

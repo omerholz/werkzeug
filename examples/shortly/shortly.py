@@ -2,17 +2,14 @@
 import os
 
 import redis
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
-from werkzeug.exceptions import HTTPException
-from werkzeug.exceptions import NotFound
+from jinja2 import Environment, FileSystemLoader
+
+from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.middleware.shared_data import SharedDataMiddleware
-from werkzeug.routing import Map
-from werkzeug.routing import Rule
+from werkzeug.routing import Map, Rule
 from werkzeug.urls import url_parse
 from werkzeug.utils import redirect
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.wrappers import Request, Response
 
 
 def base36_encode(number):
@@ -39,18 +36,15 @@ class Shortly:
     def __init__(self, config):
         self.redis = redis.Redis(config["redis_host"], config["redis_port"])
         template_path = os.path.join(os.path.dirname(__file__), "templates")
-        self.jinja_env = Environment(
-            loader=FileSystemLoader(template_path), autoescape=True
-        )
+        self.jinja_env = Environment(loader=FileSystemLoader(template_path),
+                                     autoescape=True)
         self.jinja_env.filters["hostname"] = get_hostname
 
-        self.url_map = Map(
-            [
-                Rule("/", endpoint="new_url"),
-                Rule("/<short_id>", endpoint="follow_short_link"),
-                Rule("/<short_id>+", endpoint="short_link_details"),
-            ]
-        )
+        self.url_map = Map([
+            Rule("/", endpoint="new_url"),
+            Rule("/<short_id>", endpoint="follow_short_link"),
+            Rule("/<short_id>+", endpoint="short_link_details"),
+        ])
 
     def on_new_url(self, request):
         error = None
@@ -125,8 +119,8 @@ def create_app(redis_host="localhost", redis_port=6379, with_static=True):
     app = Shortly({"redis_host": redis_host, "redis_port": redis_port})
     if with_static:
         app.wsgi_app = SharedDataMiddleware(
-            app.wsgi_app, {"/static": os.path.join(os.path.dirname(__file__), "static")}
-        )
+            app.wsgi_app,
+            {"/static": os.path.join(os.path.dirname(__file__), "static")})
     return app
 
 

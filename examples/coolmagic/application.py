@@ -4,18 +4,13 @@ The WSGI middlewares are applied in the `make_app` factory function that
 automatically wraps the application within the require middlewares. Per
 default only the `SharedDataMiddleware` is applied.
 """
-from os import listdir
-from os import path
+from os import listdir, path
 
-from werkzeug.exceptions import HTTPException
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.middleware.shared_data import SharedDataMiddleware
-from werkzeug.routing import Map
-from werkzeug.routing import RequestRedirect
-from werkzeug.routing import Rule
+from werkzeug.routing import Map, RequestRedirect, Rule
 
-from .utils import local_manager
-from .utils import Request
+from .utils import Request, local_manager
 
 
 class CoolMagicApplication:
@@ -68,8 +63,7 @@ def make_app(config=None):
 
     # static stuff
     app = SharedDataMiddleware(
-        app, {"/public": path.join(path.dirname(__file__), "public")}
-    )
+        app, {"/public": path.join(path.dirname(__file__), "public")})
 
     # clean up locals
     app = local_manager.make_middleware(app)

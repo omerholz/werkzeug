@@ -3,21 +3,18 @@ from os import path
 import creoleparser
 from genshi import Stream
 from genshi.template import TemplateLoader
-from werkzeug.local import Local
-from werkzeug.local import LocalManager
-from werkzeug.urls import url_encode
-from werkzeug.urls import url_quote
+
+from werkzeug.local import Local, LocalManager
+from werkzeug.urls import url_encode, url_quote
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import Request as BaseRequest
 from werkzeug.wrappers import Response as BaseResponse
 
-
 # calculate the path to the templates an create the template loader
 TEMPLATE_PATH = path.join(path.dirname(__file__), "templates")
-template_loader = TemplateLoader(
-    TEMPLATE_PATH, auto_reload=True, variable_lookup="lenient"
-)
-
+template_loader = TemplateLoader(TEMPLATE_PATH,
+                                 auto_reload=True,
+                                 variable_lookup="lenient")
 
 # context locals.  these two objects are use by the application to
 # bind objects to the current context.  A context is defined as the
@@ -88,9 +85,12 @@ class Response(BaseResponse):
 
     default_mimetype = "text/html"
 
-    def __init__(
-        self, response=None, status=200, headers=None, mimetype=None, content_type=None
-    ):
+    def __init__(self,
+                 response=None,
+                 status=200,
+                 headers=None,
+                 mimetype=None,
+                 content_type=None):
         if isinstance(response, Stream):
             response = response.render("html", encoding=None, doctype="html")
         super().__init__(response, status, headers, mimetype, content_type)
@@ -110,11 +110,8 @@ class Pagination:
 
     @cached_property
     def entries(self):
-        return (
-            self.query.offset((self.page - 1) * self.per_page)
-            .limit(self.per_page)
-            .all()
-        )
+        return (self.query.offset(
+            (self.page - 1) * self.per_page).limit(self.per_page).all())
 
     @property
     def has_previous(self):

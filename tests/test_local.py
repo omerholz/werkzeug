@@ -11,12 +11,10 @@ import pytest
 
 from werkzeug import local
 
-
 if sys.version_info < (3, 7):
 
     def run_async(coro):
         return asyncio.get_event_loop().run_until_complete(coro)
-
 
 else:
 
@@ -35,7 +33,7 @@ def test_basic_local():
         time.sleep(0.02)
         values.append(ns.foo)
 
-    threads = [Thread(target=value_setter, args=(x,)) for x in [1, 2, 3]]
+    threads = [Thread(target=value_setter, args=(x, )) for x in [1, 2, 3]]
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -315,7 +313,8 @@ def test_proxy_binop_int(op):
     assert op(3, p) == op(3, 2)
 
 
-@pytest.mark.parametrize("op", [operator.neg, operator.pos, abs, operator.invert])
+@pytest.mark.parametrize("op",
+                         [operator.neg, operator.pos, abs, operator.invert])
 def test_proxy_uop_int(op):
     _, p = _make_proxy(-2)
     assert op(p) == op(-2)
@@ -428,7 +427,7 @@ def test_proxy_str():
     assert "say " + p == "say {act} %s"
     assert p * 2 == "{act} %s{act} %s"
     assert 2 * p == p * 2
-    assert p % ("world",) == "{act} world"
+    assert p % ("world", ) == "{act} world"
     assert p.format(act="test") == "test %s"
 
 
@@ -533,7 +532,7 @@ def test_proxy_class():
     assert isinstance(1, p)
     assert issubclass(int, p)
     assert p.__mro__ == (Example, Parent, object)
-    assert p.__bases__ == (Parent,)
+    assert p.__bases__ == (Parent, )
     assert p.__subclasses__() == [Child]
 
 

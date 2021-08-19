@@ -33,9 +33,7 @@ and the static files would be served directly by the HTTP server.
 import typing as t
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 
 class DispatcherMiddleware:
@@ -56,9 +54,8 @@ class DispatcherMiddleware:
         self.app = app
         self.mounts = mounts or {}
 
-    def __call__(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def __call__(self, environ: "WSGIEnvironment",
+                 start_response: "StartResponse") -> t.Iterable[bytes]:
         script = environ.get("PATH_INFO", "")
         path_info = ""
 

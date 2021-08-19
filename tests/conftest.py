@@ -89,7 +89,8 @@ class DevServerClient:
 
         conn.close()
 
-        if response.headers.get("Content-Type", "").startswith("application/json"):
+        if response.headers.get("Content-Type",
+                                "").startswith("application/json"):
             response.json = json.loads(response.data)
         else:
             response.json = None
@@ -111,7 +112,6 @@ def dev_server(xprocess, request, tmp_path):
     """A function that will start a dev server in an external process
     and return a client for interacting with the server.
     """
-
     def start_dev_server(name="standard", **kwargs):
         client = DevServerClient(kwargs)
 
@@ -120,7 +120,10 @@ def dev_server(xprocess, request, tmp_path):
             # Extend the existing env, otherwise Windows and CI fails.
             # Modules will be imported from tmp_path for the reloader.
             # Unbuffered output so the logs update immediately.
-            env = {**os.environ, "PYTHONPATH": str(tmp_path), "PYTHONUNBUFFERED": "1"}
+            env = {
+                **os.environ, "PYTHONPATH": str(tmp_path),
+                "PYTHONUNBUFFERED": "1"
+            }
 
             @cached_property
             def pattern(self):

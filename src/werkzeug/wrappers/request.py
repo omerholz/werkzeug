@@ -5,26 +5,25 @@ import typing as t
 import warnings
 from io import BytesIO
 
-from .._internal import _wsgi_decoding_dance
-from ..datastructures import CombinedMultiDict
-from ..datastructures import EnvironHeaders
-from ..datastructures import FileStorage
-from ..datastructures import ImmutableMultiDict
-from ..datastructures import iter_multi_items
-from ..datastructures import MultiDict
-from ..formparser import default_stream_factory
-from ..formparser import FormDataParser
-from ..sansio.request import Request as _SansIORequest
-from ..utils import cached_property
-from ..utils import environ_property
-from ..wsgi import _get_server
-from ..wsgi import get_input_stream
 from werkzeug.exceptions import BadRequest
+
+from .._internal import _wsgi_decoding_dance
+from ..datastructures import (
+    CombinedMultiDict,
+    EnvironHeaders,
+    FileStorage,
+    ImmutableMultiDict,
+    MultiDict,
+    iter_multi_items,
+)
+from ..formparser import FormDataParser, default_stream_factory
+from ..sansio.request import Request as _SansIORequest
+from ..utils import cached_property, environ_property
+from ..wsgi import _get_server, get_input_stream
 
 if t.TYPE_CHECKING:
     import typing_extensions as te
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import WSGIApplication, WSGIEnvironment
 
 
 class Request(_SansIORequest):
@@ -115,11 +114,11 @@ class Request(_SansIORequest):
             scheme=environ.get("wsgi.url_scheme", "http"),
             server=_get_server(environ),
             root_path=_wsgi_decoding_dance(
-                environ.get("SCRIPT_NAME") or "", self.charset, self.encoding_errors
-            ),
+                environ.get("SCRIPT_NAME") or "", self.charset,
+                self.encoding_errors),
             path=_wsgi_decoding_dance(
-                environ.get("PATH_INFO") or "", self.charset, self.encoding_errors
-            ),
+                environ.get("PATH_INFO") or "", self.charset,
+                self.encoding_errors),
             query_string=environ.get("QUERY_STRING", "").encode("latin1"),
             headers=EnvironHeaders(environ),
             remote_addr=environ.get("REMOTE_ADDR"),
@@ -172,8 +171,8 @@ class Request(_SansIORequest):
 
     @classmethod
     def application(
-        cls, f: t.Callable[["Request"], "WSGIApplication"]
-    ) -> "WSGIApplication":
+            cls, f: t.Callable[["Request"],
+                               "WSGIApplication"]) -> "WSGIApplication":
         """Decorate a function as responder that accepts the request as
         the last argument.  This works like the :func:`responder`
         decorator but the function is passed the request object as the
@@ -203,7 +202,7 @@ class Request(_SansIORequest):
             request = cls(args[-2])
             with request:
                 try:
-                    resp = f(*args[:-2] + (request,))
+                    resp = f(*args[:-2] + (request, ))
                 except HTTPException as e:
                     resp = e.get_response(args[-2])
                 return resp(*args[-2:])
@@ -350,8 +349,7 @@ class Request(_SansIORequest):
         if self.shallow:
             raise RuntimeError(
                 "This request was created with 'shallow=True', reading"
-                " from the input stream is disabled."
-            )
+                " from the input stream is disabled.")
 
         return get_input_stream(self.environ)
 
@@ -390,9 +388,10 @@ class Request(_SansIORequest):
     ) -> str:
         ...
 
-    def get_data(
-        self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
-    ) -> t.Union[bytes, str]:
+    def get_data(self,
+                 cache: bool = True,
+                 as_text: bool = False,
+                 parse_form_data: bool = False) -> t.Union[bytes, str]:
         """This reads the buffered incoming data from the client into one
         bytes object.  By default this is cached but that behavior can be
         changed by setting `cache` to `False`.
@@ -556,9 +555,10 @@ class Request(_SansIORequest):
     # with sentinel values.
     _cached_json: t.Tuple[t.Any, t.Any] = (Ellipsis, Ellipsis)
 
-    def get_json(
-        self, force: bool = False, silent: bool = False, cache: bool = True
-    ) -> t.Optional[t.Any]:
+    def get_json(self,
+                 force: bool = False,
+                 silent: bool = False,
+                 cache: bool = True) -> t.Optional[t.Any]:
         """Parse :attr:`data` as JSON.
 
         If the mimetype does not indicate JSON

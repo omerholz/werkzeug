@@ -13,13 +13,10 @@ from .wrappers.request import Request
 from .wrappers.response import Response
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIEnvironment
-
+    from _typeshed.wsgi import StartResponse, WSGIEnvironment
 
 logo = Response(
-    base64.b64decode(
-        """
+    base64.b64decode("""
 R0lGODlhoACgAOMIAAEDACwpAEpCAGdgAJaKAM28AOnVAP3rAP/////////
 //////////////////////yH5BAEKAAgALAAAAACgAKAAAAT+EMlJq704680R+F0ojmRpnuj0rWnrv
 nB8rbRs33gu0bzu/0AObxgsGn3D5HHJbCUFyqZ0ukkSDlAidctNFg7gbI9LZlrBaHGtzAae0eloe25
@@ -53,11 +50,9 @@ UpyGlhjBUljyjHhWpf8OFaXwhp9O4T1gU9UeyPPa8A2l0p1kNqPXEVRm1AOs1oAGZU596t6SOR2mcB
 Oco1srWtkaVrMUzIErrKri85keKqRQYX9VX0/eAUK1hrSu6HMEX3Qh2sCh0q0D2CtnUqS4hj62sE/z
 aDs2Sg7MBS6xnQeooc2R2tC9YrKpEi9pLXfYXp20tDCpSP8rKlrD4axprb9u1Df5hSbz9QU0cRpfgn
 kiIzwKucd0wsEHlLpe5yHXuc6FrNelOl7pY2+11kTWx7VpRu97dXA3DO1vbkhcb4zyvERYajQgAADs
-="""
-    ),
+="""),
     mimetype="image/png",
 )
-
 
 TEMPLATE = """\
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -155,7 +150,8 @@ def iter_sys_path() -> t.Iterator[t.Tuple[str, bool, bool]]:
     cwd = os.path.abspath(os.getcwd())
     for item in sys.path:
         path = os.path.join(cwd, item or os.path.curdir)
-        yield strip(os.path.normpath(path)), not os.path.isdir(path), path != item
+        yield strip(
+            os.path.normpath(path)), not os.path.isdir(path), path != item
 
 
 def render_testapp(req: Request) -> bytes:
@@ -179,7 +175,8 @@ def render_testapp(req: Request) -> bytes:
         )
 
     wsgi_env = []
-    sorted_environ = sorted(req.environ.items(), key=lambda x: repr(x[0]).lower())
+    sorted_environ = sorted(req.environ.items(),
+                            key=lambda x: repr(x[0]).lower())
     for key, value in sorted_environ:
         value = "".join(wrap(escape(repr(value))))
         wsgi_env.append(f"<tr><th>{escape(str(key))}<td><code>{value}</code>")
@@ -194,25 +191,21 @@ def render_testapp(req: Request) -> bytes:
         class_ = f' class="{" ".join(class_)}"' if class_ else ""
         sys_path.append(f"<li{class_}>{escape(item)}")
 
-    return (
-        TEMPLATE
-        % {
-            "python_version": "<br>".join(escape(sys.version).splitlines()),
-            "platform": escape(sys.platform),
-            "os": escape(os.name),
-            "api_version": sys.api_version,
-            "byteorder": sys.byteorder,
-            "werkzeug_version": _werkzeug_version,
-            "python_eggs": "\n".join(python_eggs),
-            "wsgi_env": "\n".join(wsgi_env),
-            "sys_path": "\n".join(sys_path),
-        }
-    ).encode("utf-8")
+    return (TEMPLATE % {
+        "python_version": "<br>".join(escape(sys.version).splitlines()),
+        "platform": escape(sys.platform),
+        "os": escape(os.name),
+        "api_version": sys.api_version,
+        "byteorder": sys.byteorder,
+        "werkzeug_version": _werkzeug_version,
+        "python_eggs": "\n".join(python_eggs),
+        "wsgi_env": "\n".join(wsgi_env),
+        "sys_path": "\n".join(sys_path),
+    }).encode("utf-8")
 
 
-def test_app(
-    environ: "WSGIEnvironment", start_response: "StartResponse"
-) -> t.Iterable[bytes]:
+def test_app(environ: "WSGIEnvironment",
+             start_response: "StartResponse") -> t.Iterable[bytes]:
     """Simple test application that dumps the environment.  You can use
     it to check if Werkzeug is working properly:
 

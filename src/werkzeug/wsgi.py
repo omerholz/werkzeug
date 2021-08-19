@@ -1,24 +1,16 @@
 import io
 import re
 import typing as t
-from functools import partial
-from functools import update_wrapper
+from functools import partial, update_wrapper
 from itertools import chain
 
-from ._internal import _make_encode_wrapper
-from ._internal import _to_bytes
-from ._internal import _to_str
+from ._internal import _make_encode_wrapper, _to_bytes, _to_str
 from .sansio import utils as _sansio_utils
 from .sansio.utils import host_is_trusted  # noqa: F401 # Imported as part of API
-from .urls import _URLTuple
-from .urls import uri_to_iri
-from .urls import url_join
-from .urls import url_parse
-from .urls import url_quote
+from .urls import _URLTuple, uri_to_iri, url_join, url_parse, url_quote
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import WSGIApplication, WSGIEnvironment
 
 
 def responder(f: t.Callable[..., "WSGIApplication"]) -> "WSGIApplication":
@@ -67,14 +59,14 @@ def get_current_url(
             parts["path"] = environ.get("PATH_INFO", "")
 
             if not strip_querystring:
-                parts["query_string"] = environ.get("QUERY_STRING", "").encode("latin1")
+                parts["query_string"] = environ.get("QUERY_STRING",
+                                                    "").encode("latin1")
 
     return _sansio_utils.get_current_url(**parts)
 
 
 def _get_server(
-    environ: "WSGIEnvironment",
-) -> t.Optional[t.Tuple[str, t.Optional[int]]]:
+        environ: "WSGIEnvironment", ) -> t.Optional[t.Tuple[str, t.Optional[int]]]:
     name = environ.get("SERVER_NAME")
 
     if name is None:
@@ -89,9 +81,8 @@ def _get_server(
     return name, port
 
 
-def get_host(
-    environ: "WSGIEnvironment", trusted_hosts: t.Optional[t.Iterable[str]] = None
-) -> str:
+def get_host(environ: "WSGIEnvironment",
+             trusted_hosts: t.Optional[t.Iterable[str]] = None) -> str:
     """Return the host for the given WSGI environment.
 
     The ``Host`` header is preferred, then ``SERVER_NAME`` if it's not
@@ -138,9 +129,8 @@ def get_content_length(environ: "WSGIEnvironment") -> t.Optional[int]:
     return None
 
 
-def get_input_stream(
-    environ: "WSGIEnvironment", safe_fallback: bool = True
-) -> t.IO[bytes]:
+def get_input_stream(environ: "WSGIEnvironment",
+                     safe_fallback: bool = True) -> t.IO[bytes]:
     """Returns the input stream from the WSGI environment and wraps it
     in the most sensible way possible. The stream returned is not the
     raw WSGI stream in most cases but one that is safe to read from
@@ -192,9 +182,9 @@ def get_query_string(environ: "WSGIEnvironment") -> str:
     return url_quote(qs, safe=":&%=+$!*'(),")
 
 
-def get_path_info(
-    environ: "WSGIEnvironment", charset: str = "utf-8", errors: str = "replace"
-) -> str:
+def get_path_info(environ: "WSGIEnvironment",
+                  charset: str = "utf-8",
+                  errors: str = "replace") -> str:
     """Return the ``PATH_INFO`` from the WSGI environment and decode it
     unless ``charset`` is ``None``.
 
@@ -206,12 +196,13 @@ def get_path_info(
     .. versionadded:: 0.9
     """
     path = environ.get("PATH_INFO", "").encode("latin1")
-    return _to_str(path, charset, errors, allow_none_charset=True)  # type: ignore
+    return _to_str(path, charset, errors,
+                   allow_none_charset=True)  # type: ignore
 
 
-def get_script_name(
-    environ: "WSGIEnvironment", charset: str = "utf-8", errors: str = "replace"
-) -> str:
+def get_script_name(environ: "WSGIEnvironment",
+                    charset: str = "utf-8",
+                    errors: str = "replace") -> str:
     """Return the ``SCRIPT_NAME`` from the WSGI environment and decode
     it unless `charset` is set to ``None``.
 
@@ -223,12 +214,13 @@ def get_script_name(
     .. versionadded:: 0.9
     """
     path = environ.get("SCRIPT_NAME", "").encode("latin1")
-    return _to_str(path, charset, errors, allow_none_charset=True)  # type: ignore
+    return _to_str(path, charset, errors,
+                   allow_none_charset=True)  # type: ignore
 
 
-def pop_path_info(
-    environ: "WSGIEnvironment", charset: str = "utf-8", errors: str = "replace"
-) -> t.Optional[str]:
+def pop_path_info(environ: "WSGIEnvironment",
+                  charset: str = "utf-8",
+                  errors: str = "replace") -> t.Optional[str]:
     """Removes and returns the next segment of `PATH_INFO`, pushing it onto
     `SCRIPT_NAME`.  Returns `None` if there is nothing left on `PATH_INFO`.
 
@@ -281,12 +273,13 @@ def pop_path_info(
         environ["SCRIPT_NAME"] = script_name + segment
         rv = segment.encode("latin1")
 
-    return _to_str(rv, charset, errors, allow_none_charset=True)  # type: ignore
+    return _to_str(rv, charset, errors,
+                   allow_none_charset=True)  # type: ignore
 
 
-def peek_path_info(
-    environ: "WSGIEnvironment", charset: str = "utf-8", errors: str = "replace"
-) -> t.Optional[str]:
+def peek_path_info(environ: "WSGIEnvironment",
+                   charset: str = "utf-8",
+                   errors: str = "replace") -> t.Optional[str]:
     """Returns the next segment on the `PATH_INFO` or `None` if there
     is none.  Works like :func:`pop_path_info` without modifying the
     environment:
@@ -310,8 +303,10 @@ def peek_path_info(
     segments = environ.get("PATH_INFO", "").lstrip("/").split("/", 1)
     if segments:
         return _to_str(  # type: ignore
-            segments[0].encode("latin1"), charset, errors, allow_none_charset=True
-        )
+            segments[0].encode("latin1"),
+            charset,
+            errors,
+            allow_none_charset=True)
     return None
 
 
@@ -360,16 +355,14 @@ def extract_path_info(
 
     .. versionadded:: 0.6
     """
-
     def _normalize_netloc(scheme: str, netloc: str) -> str:
         parts = netloc.split("@", 1)[-1].split(":", 1)
         port: t.Optional[str]
 
         if len(parts) == 2:
             netloc, port = parts
-            if (scheme == "http" and port == "80") or (
-                scheme == "https" and port == "443"
-            ):
+            if (scheme == "http" and port == "80") or (scheme == "https" and
+                                                       port == "443"):
                 port = None
         else:
             netloc = parts[0]
@@ -383,7 +376,8 @@ def extract_path_info(
     # make sure whatever we are working on is a IRI and parse it
     path = uri_to_iri(path_or_url, charset, errors)
     if isinstance(environ_or_baseurl, dict):
-        environ_or_baseurl = get_current_url(environ_or_baseurl, root_only=True)
+        environ_or_baseurl = get_current_url(environ_or_baseurl,
+                                             root_only=True)
     base_iri = uri_to_iri(environ_or_baseurl, charset, errors)
     base_scheme, base_netloc, base_path = url_parse(base_iri)[:3]
     cur_scheme, cur_netloc, cur_path = url_parse(url_join(base_iri, path))[:3]
@@ -398,7 +392,8 @@ def extract_path_info(
             if scheme not in ("http", "https"):
                 return None
     else:
-        if not (base_scheme in ("http", "https") and base_scheme == cur_scheme):
+        if not (base_scheme in ("http", "https") and
+                base_scheme == cur_scheme):
             return None
 
     # are the netlocs compatible?
@@ -438,9 +433,9 @@ class ClosingIterator:
     def __init__(
         self,
         iterable: t.Iterable[bytes],
-        callbacks: t.Optional[
-            t.Union[t.Callable[[], None], t.Iterable[t.Callable[[], None]]]
-        ] = None,
+        callbacks: t.Optional[t.Union[t.Callable[[], None],
+                                      t.Iterable[t.Callable[[],
+                                                            None]]]] = None,
     ) -> None:
         iterator = iter(iterable)
         self._next = t.cast(t.Callable[[], bytes], partial(next, iterator))
@@ -466,9 +461,9 @@ class ClosingIterator:
             callback()
 
 
-def wrap_file(
-    environ: "WSGIEnvironment", file: t.IO[bytes], buffer_size: int = 8192
-) -> t.Iterable[bytes]:
+def wrap_file(environ: "WSGIEnvironment",
+              file: t.IO[bytes],
+              buffer_size: int = 8192) -> t.Iterable[bytes]:
     """Wraps a file.  This uses the WSGI server's file wrapper if available
     or otherwise the generic :class:`FileWrapper`.
 
@@ -485,8 +480,7 @@ def wrap_file(
     :param buffer_size: number of bytes for one iteration.
     """
     return environ.get("wsgi.file_wrapper", FileWrapper)(  # type: ignore
-        file, buffer_size
-    )
+        file, buffer_size)
 
 
 class FileWrapper:
@@ -543,7 +537,6 @@ class FileWrapper:
 
 class _RangeWrapper:
     # private for now, but should we make it public in the future ?
-
     """This class can be used to convert an iterable object into
     an iterable that will only yield a piece of the underlying content.
     It yields blocks until the underlying stream range is fully read.
@@ -574,7 +567,8 @@ class _RangeWrapper:
 
         self.read_length = 0
         self.seekable = (
-            hasattr(iterable, "seekable") and iterable.seekable()  # type: ignore
+            hasattr(iterable, "seekable") and
+            iterable.seekable()  # type: ignore
         )
         self.end_reached = False
 
@@ -600,7 +594,7 @@ class _RangeWrapper:
             while self.read_length <= self.start_byte:
                 chunk = self._next_chunk()
             if chunk is not None:
-                chunk = chunk[self.start_byte - self.read_length :]
+                chunk = chunk[self.start_byte - self.read_length:]
             contextual_read_length = self.start_byte
         return chunk, contextual_read_length
 
@@ -615,7 +609,7 @@ class _RangeWrapper:
             chunk = self._next_chunk()
         if self.end_byte is not None and self.read_length >= self.end_byte:
             self.end_reached = True
-            return chunk[: self.end_byte - contextual_read_length]
+            return chunk[:self.end_byte - contextual_read_length]
         return chunk
 
     def __next__(self) -> bytes:
@@ -705,7 +699,7 @@ def make_line_iter(
     lf = t.cast(bytes, s("\n"))
     crlf = t.cast(bytes, s("\r\n"))
 
-    _iter = t.cast(t.Iterator[bytes], chain((first_item,), _iter))
+    _iter = t.cast(t.Iterator[bytes], chain((first_item, ), _iter))
 
     def _iter_basic_lines() -> t.Iterator[bytes]:
         _join = empty.join
@@ -716,9 +710,8 @@ def make_line_iter(
                 break
             new_buf: t.List[bytes] = []
             buf_size = 0
-            for item in t.cast(
-                t.Iterator[bytes], chain(buffer, new_data.splitlines(True))
-            ):
+            for item in t.cast(t.Iterator[bytes],
+                               chain(buffer, new_data.splitlines(True))):
                 new_buf.append(item)
                 buf_size += len(item)
                 if item and item[-1:] in crlf:
@@ -785,7 +778,7 @@ def make_chunk_iter(
     if not first_item:
         return
 
-    _iter = t.cast(t.Iterator[bytes], chain((first_item,), _iter))
+    _iter = t.cast(t.Iterator[bytes], chain((first_item, ), _iter))
     if isinstance(first_item, str):
         separator = _to_str(separator)
         _split = re.compile(f"({re.escape(separator)})").split

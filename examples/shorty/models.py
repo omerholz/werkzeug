@@ -1,16 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import String
-from sqlalchemy import Table
+from sqlalchemy import Boolean, Column, DateTime, String, Table
 from sqlalchemy.orm import mapper
 
-from .utils import get_random_uid
-from .utils import metadata
-from .utils import session
-from .utils import url_for
+from .utils import get_random_uid, metadata, session, url_for
 
 url_table = Table(
     "urls",

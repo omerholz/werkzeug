@@ -1,13 +1,9 @@
 import base64
-from datetime import date
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from werkzeug import datastructures
-from werkzeug import http
+from werkzeug import datastructures, http
 from werkzeug._internal import _wsgi_encoding_dance
 from werkzeug.test import create_environ
 
@@ -44,35 +40,35 @@ class TestHTTPUtility:
             "image/png",
             datastructures.MIMEAccept,
         )
-        assert (
-            a.best_match(["text/html", "application/xhtml+xml"])
-            == "application/xhtml+xml"
-        )
+        assert (a.best_match(["text/html", "application/xhtml+xml"
+                              ]) == "application/xhtml+xml")
         assert a.best_match(["text/html"]) == "text/html"
         assert a.best_match(["foo/bar"]) is None
-        assert a.best_match(["foo/bar", "bar/foo"], default="foo/bar") == "foo/bar"
-        assert a.best_match(["application/xml", "text/xml"]) == "application/xml"
+        assert a.best_match(["foo/bar", "bar/foo"],
+                            default="foo/bar") == "foo/bar"
+        assert a.best_match(["application/xml",
+                             "text/xml"]) == "application/xml"
 
     def test_accept_mime_specificity(self):
         a = http.parse_accept_header(
-            "text/*, text/html, text/html;level=1, */*", datastructures.MIMEAccept
-        )
-        assert a.best_match(["text/html; version=1", "text/html"]) == "text/html"
-        assert a.best_match(["text/html", "text/html; level=1"]) == "text/html; level=1"
+            "text/*, text/html, text/html;level=1, */*",
+            datastructures.MIMEAccept)
+        assert a.best_match(["text/html; version=1",
+                             "text/html"]) == "text/html"
+        assert a.best_match(["text/html",
+                             "text/html; level=1"]) == "text/html; level=1"
 
     def test_charset_accept(self):
-        a = http.parse_accept_header(
-            "ISO-8859-1,utf-8;q=0.7,*;q=0.7", datastructures.CharsetAccept
-        )
+        a = http.parse_accept_header("ISO-8859-1,utf-8;q=0.7,*;q=0.7",
+                                     datastructures.CharsetAccept)
         assert a["iso-8859-1"] == a["iso8859-1"]
         assert a["iso-8859-1"] == 1
         assert a["UTF8"] == 0.7
         assert a["ebcdic"] == 0.7
 
     def test_language_accept(self):
-        a = http.parse_accept_header(
-            "de-AT,de;q=0.8,en;q=0.5", datastructures.LanguageAccept
-        )
+        a = http.parse_accept_header("de-AT,de;q=0.8,en;q=0.5",
+                                     datastructures.LanguageAccept)
         assert a.best == "de-AT"
         assert "de_AT" in a
         assert "en" in a
@@ -101,8 +97,8 @@ class TestHTTPUtility:
         assert cc.max_age == 0
         assert cc.no_cache
         cc = http.parse_cache_control_header(
-            'private, community="UCI"', None, datastructures.ResponseCacheControl
-        )
+            'private, community="UCI"', None,
+            datastructures.ResponseCacheControl)
         assert cc.private
         assert cc["community"] == "UCI"
 
@@ -119,21 +115,20 @@ class TestHTTPUtility:
 
     def test_csp_header(self):
         csp = http.parse_csp_header(
-            "default-src 'self'; script-src 'unsafe-inline' *; img-src"
-        )
+            "default-src 'self'; script-src 'unsafe-inline' *; img-src")
         assert csp.default_src == "'self'"
         assert csp.script_src == "'unsafe-inline' *"
         assert csp.img_src is None
 
     def test_authorization_header(self):
-        a = http.parse_authorization_header("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+        a = http.parse_authorization_header(
+            "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
         assert a.type == "basic"
         assert a.username == "Aladdin"
         assert a.password == "open sesame"
 
         a = http.parse_authorization_header(
-            "Basic 0YDRg9GB0YHQutC40IE60JHRg9C60LLRiw=="
-        )
+            "Basic 0YDRg9GB0YHQutC40IE60JHRg9C60LLRiw==")
         assert a.type == "basic"
         assert a.username == "русскиЁ"
         assert a.password == "Буквы"
@@ -143,8 +138,7 @@ class TestHTTPUtility:
         assert a.username == "普通话"
         assert a.password == "中文"
 
-        a = http.parse_authorization_header(
-            '''Digest username="Mufasa",
+        a = http.parse_authorization_header('''Digest username="Mufasa",
             realm="testrealm@host.invalid",
             nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093",
             uri="/dir/index.html",
@@ -152,8 +146,7 @@ class TestHTTPUtility:
             nc=00000001,
             cnonce="0a4f113b",
             response="6629fae49393a05397450978507c4ef1",
-            opaque="5ccc069c403ebaf9f0171e9517f40e41"'''
-        )
+            opaque="5ccc069c403ebaf9f0171e9517f40e41"''')
         assert a.type == "digest"
         assert a.username == "Mufasa"
         assert a.realm == "testrealm@host.invalid"
@@ -165,14 +158,12 @@ class TestHTTPUtility:
         assert a.response == "6629fae49393a05397450978507c4ef1"
         assert a.opaque == "5ccc069c403ebaf9f0171e9517f40e41"
 
-        a = http.parse_authorization_header(
-            '''Digest username="Mufasa",
+        a = http.parse_authorization_header('''Digest username="Mufasa",
             realm="testrealm@host.invalid",
             nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093",
             uri="/dir/index.html",
             response="e257afa1414a3340d93d30955171dd0e",
-            opaque="5ccc069c403ebaf9f0171e9517f40e41"'''
-        )
+            opaque="5ccc069c403ebaf9f0171e9517f40e41"''')
         assert a.type == "digest"
         assert a.username == "Mufasa"
         assert a.realm == "testrealm@host.invalid"
@@ -197,13 +188,11 @@ class TestHTTPUtility:
         wa.realm = "Foo Bar"
         assert wa.to_header() == 'Basic realm="Foo Bar"'
 
-        wa = http.parse_www_authenticate_header(
-            '''Digest
+        wa = http.parse_www_authenticate_header('''Digest
             realm="testrealm@host.com",
             qop="auth,auth-int",
             nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093",
-            opaque="5ccc069c403ebaf9f0171e9517f40e41"'''
-        )
+            opaque="5ccc069c403ebaf9f0171e9517f40e41"''')
         assert wa.type == "digest"
         assert wa.realm == "testrealm@host.com"
         assert "auth" in wa.qop
@@ -258,7 +247,8 @@ class TestHTTPUtility:
         assert headers2 == datastructures.Headers([("Date", now)])
 
     def test_remove_hop_by_hop_headers(self):
-        headers1 = [("Connection", "closed"), ("Foo", "bar"), ("Keep-Alive", "wtf")]
+        headers1 = [("Connection", "closed"), ("Foo", "bar"),
+                    ("Keep-Alive", "wtf")]
         headers2 = datastructures.Headers(headers1)
 
         http.remove_hop_by_hop_headers(headers1)
@@ -272,70 +262,111 @@ class TestHTTPUtility:
         assert http.parse_options_header("") == ("", {})
         assert http.parse_options_header(r'something; foo="other\"thing"') == (
             "something",
-            {"foo": 'other"thing'},
-        )
-        assert http.parse_options_header(r'something; foo="other\"thing"; meh=42') == (
-            "something",
-            {"foo": 'other"thing', "meh": "42"},
+            {
+                "foo": 'other"thing'
+            },
         )
         assert http.parse_options_header(
-            r'something; foo="other\"thing"; meh=42; bleh'
-        ) == ("something", {"foo": 'other"thing', "meh": "42", "bleh": None})
+            r'something; foo="other\"thing"; meh=42') == (
+                "something",
+                {
+                    "foo": 'other"thing',
+                    "meh": "42"
+                },
+        )
         assert http.parse_options_header(
-            'something; foo="other;thing"; meh=42; bleh'
-        ) == ("something", {"foo": "other;thing", "meh": "42", "bleh": None})
-        assert http.parse_options_header('something; foo="otherthing"; meh=; bleh') == (
-            "something",
-            {"foo": "otherthing", "meh": None, "bleh": None},
+            r'something; foo="other\"thing"; meh=42; bleh') == ("something", {
+                "foo": 'other"thing',
+                "meh": "42",
+                "bleh": None
+            })
+        assert http.parse_options_header(
+            'something; foo="other;thing"; meh=42; bleh') == ("something", {
+                "foo": "other;thing",
+                "meh": "42",
+                "bleh": None
+            })
+        assert http.parse_options_header(
+            'something; foo="otherthing"; meh=; bleh') == (
+                "something",
+                {
+                    "foo": "otherthing",
+                    "meh": None,
+                    "bleh": None
+                },
         )
         # Issue #404
         assert http.parse_options_header(
-            'multipart/form-data; name="foo bar"; filename="bar foo"'
-        ) == ("multipart/form-data", {"name": "foo bar", "filename": "bar foo"})
+            'multipart/form-data; name="foo bar"; filename="bar foo"') == (
+                "multipart/form-data", {
+                    "name": "foo bar",
+                    "filename": "bar foo"
+                })
         # Examples from RFC
         assert http.parse_options_header("audio/*; q=0.2, audio/basic") == (
             "audio/*",
-            {"q": "0.2"},
+            {
+                "q": "0.2"
+            },
         )
-        assert http.parse_options_header(
-            "audio/*; q=0.2, audio/basic", multiple=True
-        ) == ("audio/*", {"q": "0.2"}, "audio/basic", {})
+        assert http.parse_options_header("audio/*; q=0.2, audio/basic",
+                                         multiple=True) == ("audio/*", {
+                                             "q": "0.2"
+                                         }, "audio/basic", {})
         assert http.parse_options_header(
             "text/plain; q=0.5, text/html\n        text/x-dvi; q=0.8, text/x-c",
             multiple=True,
         ) == (
             "text/plain",
-            {"q": "0.5"},
+            {
+                "q": "0.5"
+            },
             "text/html",
             {},
             "text/x-dvi",
-            {"q": "0.8"},
+            {
+                "q": "0.8"
+            },
             "text/x-c",
             {},
         )
         assert http.parse_options_header(
             "text/plain; q=0.5, text/html\n        text/x-dvi; q=0.8, text/x-c"
-        ) == ("text/plain", {"q": "0.5"})
+        ) == ("text/plain", {
+            "q": "0.5"
+        })
         # Issue #932
         assert http.parse_options_header(
             "form-data; name=\"a_file\"; filename*=UTF-8''"
-            '"%c2%a3%20and%20%e2%82%ac%20rates"'
-        ) == ("form-data", {"name": "a_file", "filename": "\xa3 and \u20ac rates"})
+            '"%c2%a3%20and%20%e2%82%ac%20rates"') == ("form-data", {
+                "name":
+                "a_file",
+                "filename":
+                "\xa3 and \u20ac rates"
+            })
         assert http.parse_options_header(
             "form-data; name*=UTF-8''\"%C5%AAn%C4%ADc%C5%8Dde%CC%BD\"; "
-            'filename="some_file.txt"'
-        ) == (
-            "form-data",
-            {"name": "\u016an\u012dc\u014dde\u033d", "filename": "some_file.txt"},
+            'filename="some_file.txt"') == (
+                "form-data",
+                {
+                    "name": "\u016an\u012dc\u014dde\u033d",
+                    "filename": "some_file.txt"
+                },
         )
 
     def test_parse_options_header_value_with_quotes(self):
         assert http.parse_options_header(
-            'form-data; name="file"; filename="t\'es\'t.txt"'
-        ) == ("form-data", {"name": "file", "filename": "t'es't.txt"})
+            'form-data; name="file"; filename="t\'es\'t.txt"') == (
+                "form-data", {
+                    "name": "file",
+                    "filename": "t'es't.txt"
+                })
         assert http.parse_options_header(
-            "form-data; name=\"file\"; filename*=UTF-8''\"'🐍'.txt\""
-        ) == ("form-data", {"name": "file", "filename": "'🐍'.txt"})
+            "form-data; name=\"file\"; filename*=UTF-8''\"'🐍'.txt\"") == (
+                "form-data", {
+                    "name": "file",
+                    "filename": "'🐍'.txt"
+                })
 
     def test_parse_options_header_broken_values(self):
         # Issue #995
@@ -348,15 +379,20 @@ class TestHTTPUtility:
 
     def test_dump_options_header(self):
         assert http.dump_options_header("foo", {"bar": 42}) == "foo; bar=42"
-        assert http.dump_options_header("foo", {"bar": 42, "fizz": None}) in (
+        assert http.dump_options_header("foo", {
+            "bar": 42,
+            "fizz": None
+        }) in (
             "foo; bar=42; fizz",
             "foo; fizz; bar=42",
         )
 
     def test_dump_header(self):
         assert http.dump_header([1, 2, 3]) == "1, 2, 3"
-        assert http.dump_header([1, 2, 3], allow_token=False) == '"1", "2", "3"'
-        assert http.dump_header({"foo": "bar"}, allow_token=False) == 'foo="bar"'
+        assert http.dump_header([1, 2, 3],
+                                allow_token=False) == '"1", "2", "3"'
+        assert http.dump_header({"foo": "bar"},
+                                allow_token=False) == 'foo="bar"'
         assert http.dump_header({"foo": "bar"}) == "foo=bar"
 
     def test_is_resource_modified(self):
@@ -368,22 +404,27 @@ class TestHTTPUtility:
         env["REQUEST_METHOD"] = "GET"
 
         # etagify from data
-        pytest.raises(TypeError, http.is_resource_modified, env, data="42", etag="23")
+        pytest.raises(TypeError,
+                      http.is_resource_modified,
+                      env,
+                      data="42",
+                      etag="23")
         env["HTTP_IF_NONE_MATCH"] = http.generate_etag(b"awesome")
         assert not http.is_resource_modified(env, data=b"awesome")
 
-        env["HTTP_IF_MODIFIED_SINCE"] = http.http_date(datetime(2008, 1, 1, 12, 30))
+        env["HTTP_IF_MODIFIED_SINCE"] = http.http_date(
+            datetime(2008, 1, 1, 12, 30))
         assert not http.is_resource_modified(
-            env, last_modified=datetime(2008, 1, 1, 12, 00)
-        )
-        assert http.is_resource_modified(
-            env, last_modified=datetime(2008, 1, 1, 13, 00)
-        )
+            env, last_modified=datetime(2008, 1, 1, 12, 00))
+        assert http.is_resource_modified(env,
+                                         last_modified=datetime(
+                                             2008, 1, 1, 13, 00))
 
     def test_is_resource_modified_for_range_requests(self):
         env = create_environ()
 
-        env["HTTP_IF_MODIFIED_SINCE"] = http.http_date(datetime(2008, 1, 1, 12, 30))
+        env["HTTP_IF_MODIFIED_SINCE"] = http.http_date(
+            datetime(2008, 1, 1, 12, 30))
         env["HTTP_IF_RANGE"] = http.generate_etag(b"awesome_if_range")
         # Range header not present, so If-Range should be ignored
         assert not http.is_resource_modified(
@@ -395,28 +436,29 @@ class TestHTTPUtility:
 
         env["HTTP_RANGE"] = ""
         assert not http.is_resource_modified(
-            env, data=b"awesome_if_range", ignore_if_range=False
-        )
-        assert http.is_resource_modified(
-            env, data=b"not_the_same", ignore_if_range=False
-        )
+            env, data=b"awesome_if_range", ignore_if_range=False)
+        assert http.is_resource_modified(env,
+                                         data=b"not_the_same",
+                                         ignore_if_range=False)
 
         env["HTTP_IF_RANGE"] = http.http_date(datetime(2008, 1, 1, 13, 30))
-        assert http.is_resource_modified(
-            env, last_modified=datetime(2008, 1, 1, 14, 00), ignore_if_range=False
-        )
-        assert not http.is_resource_modified(
-            env, last_modified=datetime(2008, 1, 1, 13, 30), ignore_if_range=False
-        )
-        assert http.is_resource_modified(
-            env, last_modified=datetime(2008, 1, 1, 13, 30), ignore_if_range=True
-        )
+        assert http.is_resource_modified(env,
+                                         last_modified=datetime(
+                                             2008, 1, 1, 14, 00),
+                                         ignore_if_range=False)
+        assert not http.is_resource_modified(env,
+                                             last_modified=datetime(
+                                                 2008, 1, 1, 13, 30),
+                                             ignore_if_range=False)
+        assert http.is_resource_modified(env,
+                                         last_modified=datetime(
+                                             2008, 1, 1, 13, 30),
+                                         ignore_if_range=True)
 
     def test_parse_cookie(self):
         cookies = http.parse_cookie(
             "dismiss-top=6; CP=null*; PHPSESSID=0a539d42abc001cdc762809248d4beed;"
-            'a=42; b="\\";"; ; fo234{=bar;blub=Blah; "__Secure-c"=d'
-        )
+            'a=42; b="\\";"; ; fo234{=bar;blub=Blah; "__Secure-c"=d')
         assert cookies.to_dict() == {
             "CP": "null*",
             "PHPSESSID": "0a539d42abc001cdc762809248d4beed",
@@ -429,9 +471,11 @@ class TestHTTPUtility:
         }
 
     def test_dump_cookie(self):
-        rv = http.dump_cookie(
-            "foo", "bar baz blub", 360, httponly=True, sync_expires=False
-        )
+        rv = http.dump_cookie("foo",
+                              "bar baz blub",
+                              360,
+                              httponly=True,
+                              sync_expires=False)
         assert set(rv.split("; ")) == {
             "HttpOnly",
             "Max-Age=360",
@@ -443,8 +487,7 @@ class TestHTTPUtility:
 
     def test_bad_cookies(self):
         cookies = http.parse_cookie(
-            "first=IamTheFirst ; a=1; oops ; a=2 ;second = andMeTwo;"
-        )
+            "first=IamTheFirst ; a=1; oops ; a=2 ;second = andMeTwo;")
         expect = {
             "first": ["IamTheFirst"],
             "a": ["1", "2"],
@@ -464,11 +507,16 @@ class TestHTTPUtility:
         val = http.dump_cookie("foo", "?foo")
         assert val == 'foo="?foo"; Path=/'
         assert http.parse_cookie(val).to_dict() == {"foo": "?foo", "Path": "/"}
-        assert http.parse_cookie(r'foo="foo\054bar"').to_dict(), {"foo": "foo,bar"}
+        assert http.parse_cookie(r'foo="foo\054bar"').to_dict(), {
+            "foo": "foo,bar"
+        }
 
     def test_parse_set_cookie_directive(self):
         val = 'foo="?foo"; version="0.1";'
-        assert http.parse_cookie(val).to_dict() == {"foo": "?foo", "version": "0.1"}
+        assert http.parse_cookie(val).to_dict() == {
+            "foo": "?foo",
+            "version": "0.1"
+        }
 
     def test_cookie_domain_resolving(self):
         val = http.dump_cookie("foo", "bar", domain="\N{SNOWMAN}.com")
@@ -704,7 +752,8 @@ def test_parse_date(value, expect):
             "Sun, 06 Nov 1994 08:49:37 GMT",
         ),
         (
-            datetime(1994, 11, 6, 8, 49, 37, tzinfo=timezone(timedelta(hours=-8))),
+            datetime(
+                1994, 11, 6, 8, 49, 37, tzinfo=timezone(timedelta(hours=-8))),
             "Sun, 06 Nov 1994 16:49:37 GMT",
         ),
         (datetime(1994, 11, 6, 8, 49, 37), "Sun, 06 Nov 1994 08:49:37 GMT"),

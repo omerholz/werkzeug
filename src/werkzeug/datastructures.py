@@ -3,16 +3,14 @@ import codecs
 import mimetypes
 import re
 import warnings
-from collections.abc import Collection
-from collections.abc import MutableSet
+from collections.abc import Collection, MutableSet
 from copy import deepcopy
 from io import BytesIO
 from itertools import repeat
 from os import fspath
 
-from . import exceptions
-from ._internal import _make_encode_wrapper
-from ._internal import _missing
+from . import exceptions, http
+from ._internal import _make_encode_wrapper, _missing
 from .filesystem import get_filesystem_encoding
 
 
@@ -54,7 +52,7 @@ class ImmutableListMixin:
         return rv
 
     def __reduce_ex__(self, protocol):
-        return type(self), (list(self),)
+        return type(self), (list(self), )
 
     def __delitem__(self, key):
         is_immutable(self)
@@ -119,7 +117,7 @@ class ImmutableDictMixin:
         return instance
 
     def __reduce_ex__(self, protocol):
-        return type(self), (dict(self),)
+        return type(self), (dict(self), )
 
     def _iter_hashitems(self):
         return self.items()
@@ -161,7 +159,7 @@ class ImmutableMultiDictMixin(ImmutableDictMixin):
     """
 
     def __reduce_ex__(self, protocol):
-        return type(self), (list(self.items(multi=True)),)
+        return type(self), (list(self.items(multi=True)), )
 
     def _iter_hashitems(self):
         return self.items(multi=True)
@@ -701,7 +699,7 @@ class OrderedMultiDict(MultiDict):
     __hash__ = None
 
     def __reduce_ex__(self, protocol):
-        return type(self), (list(self.items(multi=True)),)
+        return type(self), (list(self.items(multi=True)), )
 
     def __getstate__(self):
         return list(self.items(multi=True))
@@ -783,7 +781,8 @@ class OrderedMultiDict(MultiDict):
             self.add(key, value)
 
     def setlistdefault(self, key, default_list=None):
-        raise TypeError("setlistdefault is unsupported for ordered multi dicts")
+        raise TypeError(
+            "setlistdefault is unsupported for ordered multi dicts")
 
     def update(self, mapping):
         for key, value in iter_multi_items(mapping):
@@ -827,8 +826,8 @@ class OrderedMultiDict(MultiDict):
 
 def _options_header_vkw(value, kw):
     return http.dump_options_header(
-        value, {k.replace("_", "-"): v for k, v in kw.items()}
-    )
+        value, {k.replace("_", "-"): v
+                for k, v in kw.items()})
 
 
 def _unicodify_header_value(value):
@@ -902,11 +901,10 @@ class Headers:
 
     def __eq__(self, other):
         def lowered(item):
-            return (item[0].lower(),) + item[1:]
+            return (item[0].lower(), ) + item[1:]
 
         return other.__class__ is self.__class__ and set(
-            map(lowered, other._list)
-        ) == set(map(lowered, self._list))
+            map(lowered, other._list)) == set(map(lowered, self._list))
 
     __hash__ = None
 
@@ -1013,7 +1011,8 @@ class Headers:
             Support :class:`MultiDict`. Allow passing ``kwargs``.
         """
         if len(args) > 1:
-            raise TypeError(f"update expected at most 1 arguments, got {len(args)}")
+            raise TypeError(
+                f"update expected at most 1 arguments, got {len(args)}")
 
         if args:
             for key, value in iter_multi_items(args[0]):
@@ -1122,10 +1121,8 @@ class Headers:
         if not isinstance(value, str):
             raise TypeError("Value should be a string.")
         if "\n" in value or "\r" in value:
-            raise ValueError(
-                "Detected newline in header value.  This is "
-                "a potential security problem"
-            )
+            raise ValueError("Detected newline in header value.  This is "
+                             "a potential security problem")
 
     def add_header(self, _key, _value, **_kw):
         """Add a new header tuple to the list.
@@ -1172,7 +1169,7 @@ class Headers:
         else:
             self._list.append((_key, _value))
             return
-        self._list[idx + 1 :] = [t for t in listiter if t[0].lower() != ikey]
+        self._list[idx + 1:] = [t for t in listiter if t[0].lower() != ikey]
 
     def setlist(self, key, values):
         """Remove any existing values for a header and add new ones.
@@ -1230,10 +1227,8 @@ class Headers:
         if isinstance(key, (slice, int)):
             if isinstance(key, int):
                 value = [value]
-            value = [
-                (_unicodify_header_value(k), _unicodify_header_value(v))
-                for (k, v) in value
-            ]
+            value = [(_unicodify_header_value(k), _unicodify_header_value(v))
+                     for (k, v) in value]
             for (_, v) in value:
                 self._validate_value(v)
             if isinstance(key, int):
@@ -1257,7 +1252,8 @@ class Headers:
         .. versionadded:: 1.0
         """
         if len(args) > 1:
-            raise TypeError(f"update expected at most 1 arguments, got {len(args)}")
+            raise TypeError(
+                f"update expected at most 1 arguments, got {len(args)}")
 
         if args:
             mapping = args[0]
@@ -1396,15 +1392,16 @@ class EnvironHeaders(ImmutableHeadersMixin, Headers):
     def __iter__(self):
         for key, value in self.environ.items():
             if key.startswith("HTTP_") and key not in (
-                "HTTP_CONTENT_TYPE",
-                "HTTP_CONTENT_LENGTH",
+                    "HTTP_CONTENT_TYPE",
+                    "HTTP_CONTENT_LENGTH",
             ):
                 yield (
                     key[5:].replace("_", "-").title(),
                     _unicodify_header_value(value),
                 )
             elif key in ("CONTENT_TYPE", "CONTENT_LENGTH") and value:
-                yield (key.replace("_", "-").title(), _unicodify_header_value(value))
+                yield (key.replace("_", "-").title(),
+                       _unicodify_header_value(value))
 
     def copy(self):
         raise TypeError(f"cannot create {type(self).__name__!r} copies")
@@ -1434,14 +1431,15 @@ class CombinedMultiDict(ImmutableMultiDictMixin, MultiDict):
     """
 
     def __reduce_ex__(self, protocol):
-        return type(self), (self.dicts,)
+        return type(self), (self.dicts, )
 
     def __init__(self, dicts=None):
         self.dicts = list(dicts) or []
 
     @classmethod
     def fromkeys(cls, keys, value=None):
-        raise TypeError(f"cannot create {cls.__name__!r} instances by fromkeys")
+        raise TypeError(
+            f"cannot create {cls.__name__!r} instances by fromkeys")
 
     def __getitem__(self, key):
         for d in self.dicts:
@@ -1583,9 +1581,8 @@ class FileMultiDict(MultiDict):
                     filename = file
                 file = open(file, "rb")
             if filename and content_type is None:
-                content_type = (
-                    mimetypes.guess_type(filename)[0] or "application/octet-stream"
-                )
+                content_type = (mimetypes.guess_type(filename)[0] or
+                                "application/octet-stream")
             value = FileStorage(file, filename, name, content_type)
 
         self.add(name, value)
@@ -1693,14 +1690,14 @@ class Accept(ImmutableList):
             list.__init__(self, values)
         else:
             self.provided = True
-            values = sorted(
-                values, key=lambda x: (self._specificity(x[0]), x[1]), reverse=True
-            )
+            values = sorted(values,
+                            key=lambda x: (self._specificity(x[0]), x[1]),
+                            reverse=True)
             list.__init__(self, values)
 
     def _specificity(self, value):
         """Returns a tuple describing the value's specificity."""
-        return (value != "*",)
+        return (value != "*", )
 
     def _value_matches(self, value, item):
         """Check if a value matches a given accept item."""
@@ -1797,7 +1794,7 @@ class Accept(ImmutableList):
         """
         result = default
         best_quality = -1
-        best_specificity = (-1,)
+        best_specificity = (-1, )
         for server_item in matches:
             match = self._best_single_match(server_item)
             if not match:
@@ -1863,24 +1860,18 @@ class MIMEAccept(Accept):
         if item_type == "*" and item_subtype != "*":
             return False
 
-        return (
-            (item_type == "*" and item_subtype == "*")
-            or (value_type == "*" and value_subtype == "*")
-        ) or (
-            item_type == value_type
-            and (
-                item_subtype == "*"
-                or value_subtype == "*"
-                or (item_subtype == value_subtype and item_params == value_params)
-            )
-        )
+        return ((item_type == "*" and item_subtype == "*") or
+                (value_type == "*" and value_subtype == "*")) or (
+                    item_type == value_type and
+                    (item_subtype == "*" or value_subtype == "*" or
+                     (item_subtype == value_subtype and
+                      item_params == value_params)))
 
     @property
     def accept_html(self):
         """True if this object accepts HTML."""
-        return (
-            "text/html" in self or "application/xhtml+xml" in self or self.accept_xhtml
-        )
+        return ("text/html" in self or "application/xhtml+xml" in self or
+                self.accept_xhtml)
 
     @property
     def accept_xhtml(self):
@@ -1934,9 +1925,8 @@ class LanguageAccept(Accept):
         # Fall back to accepting primary tags. If a client accepts
         # "en-US", "en" is a valid match at this point. Need to use
         # re.split to account for 2 or 3 letter codes.
-        fallback = Accept(
-            [(_locale_delim_re.split(item[0], 1)[0], item[1]) for item in self]
-        )
+        fallback = Accept([(_locale_delim_re.split(item[0], 1)[0], item[1])
+                           for item in self])
         result = fallback.best_match(matches)
 
         if result is not None:
@@ -1944,7 +1934,9 @@ class LanguageAccept(Accept):
 
         # Fall back to matching primary tags. If the client accepts
         # "en", "en-US" is a valid match at this point.
-        fallback_matches = [_locale_delim_re.split(item, 1)[0] for item in matches]
+        fallback_matches = [
+            _locale_delim_re.split(item, 1)[0] for item in matches
+        ]
         result = super().best_match(fallback_matches)
 
         # Return a value from the original match list. Find the first
@@ -2249,7 +2241,7 @@ class HeaderSet(MutableSet):
 
     def add(self, header):
         """Add a new header to the set."""
-        self.update((header,))
+        self.update((header, ))
 
     def remove(self, header):
         """Remove a header from the set.  This raises an :exc:`KeyError` if the
@@ -2434,9 +2426,8 @@ class ETags(Collection):
         """Convert the etags set into a HTTP header string."""
         if self.star_tag:
             return "*"
-        return ", ".join(
-            [f'"{x}"' for x in self._strong] + [f'W/"{x}"' for x in self._weak]
-        )
+        return ", ".join([f'"{x}"' for x in self._strong] +
+                         [f'W/"{x}"' for x in self._weak])
 
     def __call__(self, etag=None, data=None, include_weak=False):
         if [etag, data].count(None) != 1:
@@ -2518,7 +2509,8 @@ class Range:
         self.ranges = ranges
 
         for start, end in ranges:
-            if start is None or (end is not None and (start < 0 or start >= end)):
+            if start is None or (end is not None and
+                                 (start < 0 or start >= end)):
                 raise ValueError(f"{(start, end)} is not a valid range.")
 
     def range_for_length(self, length):
@@ -2591,7 +2583,8 @@ class ContentRange:
     """
 
     def __init__(self, units, start, stop, length=None, on_update=None):
-        assert http.is_byte_range_valid(start, stop, length), "Bad range provided"
+        assert http.is_byte_range_valid(start, stop,
+                                        length), "Bad range provided"
         self.on_update = on_update
         self.set(start, stop, length, units)
 
@@ -2607,7 +2600,8 @@ class ContentRange:
 
     def set(self, start, stop, length=None, units="bytes"):
         """Simple method to update the ranges."""
-        assert http.is_byte_range_valid(start, stop, length), "Bad range provided"
+        assert http.is_byte_range_valid(start, stop,
+                                        length), "Bad range provided"
         self._units = units
         self._start = start
         self._stop = stop
@@ -2738,8 +2732,7 @@ class Authorization(ImmutableDictMixin, dict):
         """
         if self.type == "basic":
             value = base64.b64encode(
-                f"{self.username}:{self.password}".encode()
-            ).decode("utf8")
+                f"{self.username}:{self.password}".encode()).decode("utf8")
             return f"Basic {value}"
 
         if self.type == "digest":
@@ -2800,9 +2793,13 @@ class WWWAuthenticate(UpdateDictMixin, dict):
         if self.on_update:
             self.on_update(self)
 
-    def set_digest(
-        self, realm, nonce, qop=("auth",), opaque=None, algorithm=None, stale=False
-    ):
+    def set_digest(self,
+                   realm,
+                   nonce,
+                   qop=("auth", ),
+                   opaque=None,
+                   algorithm=None,
+                   stale=False):
         """Clear the auth info and enable digest auth."""
         d = {
             "__auth_type__": "digest",
@@ -2825,10 +2822,11 @@ class WWWAuthenticate(UpdateDictMixin, dict):
         """Convert the stored values into a WWW-Authenticate header."""
         d = dict(self)
         auth_type = d.pop("__auth_type__", None) or "basic"
-        kv_items = (
-            (k, http.quote_header_value(v, allow_token=k not in self._require_quoting))
-            for k, v in d.items()
-        )
+        kv_items = ((k,
+                     http.quote_header_value(v,
+                                             allow_token=k
+                                             not in self._require_quoting))
+                    for k, v in d.items())
         kv_string = ", ".join([f"{k}={v}" for k, v in kv_items])
         return f"{auth_type.title()} {kv_string}"
 
@@ -2938,7 +2936,8 @@ class FileStorage:
             # Make sure the filename is not bytes. This might happen if
             # the file was opened from the bytes API.
             if isinstance(filename, bytes):
-                filename = filename.decode(get_filesystem_encoding(), "replace")
+                filename = filename.decode(get_filesystem_encoding(),
+                                           "replace")
 
         self.filename = filename
         if headers is None:
@@ -2951,7 +2950,8 @@ class FileStorage:
 
     def _parse_content_type(self):
         if not hasattr(self, "_parsed_content_type"):
-            self._parsed_content_type = http.parse_options_header(self.content_type)
+            self._parsed_content_type = http.parse_options_header(
+                self.content_type)
 
     @property
     def content_type(self):
@@ -3048,4 +3048,3 @@ class FileStorage:
 
 
 # circular dependencies
-from . import http

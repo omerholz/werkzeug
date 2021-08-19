@@ -13,15 +13,21 @@ def test_http_proxy(standard_app):
             "/foo": {
                 "target": standard_app.url,
                 "host": "faked.invalid",
-                "headers": {"X-Special": "foo"},
+                "headers": {
+                    "X-Special": "foo"
+                },
             },
             "/bar": {
                 "target": standard_app.url,
                 "host": None,
                 "remove_prefix": True,
-                "headers": {"X-Special": "bar"},
+                "headers": {
+                    "X-Special": "bar"
+                },
             },
-            "/autohost": {"target": standard_app.url},
+            "/autohost": {
+                "target": standard_app.url
+            },
         },
     )
 

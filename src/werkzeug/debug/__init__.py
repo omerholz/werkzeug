@@ -10,8 +10,7 @@ import time
 import typing as t
 import uuid
 from itertools import chain
-from os.path import basename
-from os.path import join
+from os.path import basename, join
 
 from .._internal import _log
 from ..http import parse_cookie
@@ -19,22 +18,18 @@ from ..security import gen_salt
 from ..wrappers.request import Request
 from ..wrappers.response import Response
 from .console import Console
-from .tbtools import Frame
-from .tbtools import get_current_traceback
-from .tbtools import render_console_html
-from .tbtools import Traceback
+from .tbtools import Frame, Traceback, get_current_traceback, render_console_html
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 # A week
 PIN_TIME = 60 * 60 * 24 * 7
 
 
 def hash_pin(pin: str) -> str:
-    return hashlib.sha1(f"{pin} added salt".encode("utf-8", "replace")).hexdigest()[:12]
+    return hashlib.sha1(f"{pin} added salt".encode("utf-8",
+                                                   "replace")).hexdigest()[:12]
 
 
 _machine_id: t.Optional[t.Union[str, bytes]] = None
@@ -77,11 +72,10 @@ def get_machine_id() -> t.Optional[t.Union[str, bytes]]:
         try:
             # subprocess may not be available, e.g. Google App Engine
             # https://github.com/pallets/werkzeug/issues/925
-            from subprocess import Popen, PIPE
+            from subprocess import PIPE, Popen
 
-            dump = Popen(
-                ["ioreg", "-c", "IOPlatformExpertDevice", "-d", "2"], stdout=PIPE
-            ).communicate()[0]
+            dump = Popen(["ioreg", "-c", "IOPlatformExpertDevice", "-d", "2"],
+                         stdout=PIPE).communicate()[0]
             match = re.search(b'"serial-number" = <([^>]+)', dump)
 
             if match is not None:
@@ -97,10 +91,10 @@ def get_machine_id() -> t.Optional[t.Union[str, bytes]]:
         else:
             try:
                 with winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE,
-                    "SOFTWARE\\Microsoft\\Cryptography",
-                    0,
-                    winreg.KEY_READ | winreg.KEY_WOW64_64KEY,
+                        winreg.HKEY_LOCAL_MACHINE,
+                        "SOFTWARE\\Microsoft\\Cryptography",
+                        0,
+                        winreg.KEY_READ | winreg.KEY_WOW64_64KEY,
                 ) as rk:
                     guid: t.Union[str, bytes]
                     guid_type: int
@@ -155,7 +149,8 @@ def get_pin_and_cookie_name(
         else:
             num = pin
 
-    modname = getattr(app, "__module__", t.cast(object, app).__class__.__module__)
+    modname = getattr(app, "__module__",
+                      t.cast(object, app).__class__.__module__)
     username: t.Optional[str]
 
     try:
@@ -173,7 +168,8 @@ def get_pin_and_cookie_name(
     probably_public_bits = [
         username,
         modname,
-        getattr(app, "__name__", type(app).__name__),
+        getattr(app, "__name__",
+                type(app).__name__),
         getattr(mod, "__file__", None),
     ]
 
@@ -204,10 +200,8 @@ def get_pin_and_cookie_name(
     if rv is None:
         for group_size in 5, 4, 3:
             if len(num) % group_size == 0:
-                rv = "-".join(
-                    num[x : x + group_size].rjust(group_size, "0")
-                    for x in range(0, len(num), group_size)
-                )
+                rv = "-".join(num[x:x + group_size].rjust(group_size, "0")
+                              for x in range(0, len(num), group_size))
                 break
         else:
             rv = num
@@ -251,7 +245,8 @@ class DebuggedApplication:
         evalex: bool = False,
         request_key: str = "werkzeug.request",
         console_path: str = "/console",
-        console_init_func: t.Optional[t.Callable[[], t.Dict[str, t.Any]]] = None,
+        console_init_func: t.Optional[t.Callable[[], t.Dict[str,
+                                                            t.Any]]] = None,
         show_hidden_frames: bool = False,
         pin_security: bool = True,
         pin_logging: bool = True,
@@ -275,7 +270,8 @@ class DebuggedApplication:
             if os.environ.get("WERKZEUG_RUN_MAIN") == "true" and pin_logging:
                 _log("warning", " * Debugger is active!")
                 if self.pin is None:
-                    _log("warning", " * Debugger PIN disabled. DEBUGGER UNSECURED!")
+                    _log("warning",
+                         " * Debugger PIN disabled. DEBUGGER UNSECURED!")
                 else:
                     _log("info", " * Debugger PIN: %s", self.pin)
         else:
@@ -301,8 +297,8 @@ class DebuggedApplication:
         return self._pin_cookie
 
     def debug_application(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterator[bytes]:
+            self, environ: "WSGIEnvironment",
+            start_response: "StartResponse") -> t.Iterator[bytes]:
         """Run the application and conserve the traceback frames."""
         app_iter = None
         try:
@@ -340,19 +336,18 @@ class DebuggedApplication:
                 environ["wsgi.errors"].write(
                     "Debugging middleware caught exception in streamed "
                     "response at a point where response headers were already "
-                    "sent.\n"
-                )
+                    "sent.\n")
             else:
                 is_trusted = bool(self.check_pin_trust(environ))
-                yield traceback.render_full(
-                    evalex=self.evalex, evalex_trusted=is_trusted, secret=self.secret
-                ).encode("utf-8", "replace")
+                yield traceback.render_full(evalex=self.evalex,
+                                            evalex_trusted=is_trusted,
+                                            secret=self.secret).encode(
+                                                "utf-8", "replace")
 
             traceback.log(environ["wsgi.errors"])
 
-    def execute_command(
-        self, request: Request, command: str, frame: t.Union[Frame, _ConsoleFrame]
-    ) -> Response:
+    def execute_command(self, request: Request, command: str,
+                        frame: t.Union[Frame, _ConsoleFrame]) -> Response:
         """Execute a command in a console."""
         return Response(frame.console.eval(command), mimetype="text/html")
 
@@ -379,7 +374,8 @@ class DebuggedApplication:
         except OSError:
             data = None
         if data is not None:
-            mimetype = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            mimetype = mimetypes.guess_type(
+                filename)[0] or "application/octet-stream"
             return Response(data, mimetype=mimetype)
         return Response("Not Found", status=404)
 
@@ -441,7 +437,10 @@ class DebuggedApplication:
                 self._fail_pin_auth()
 
         rv = Response(
-            json.dumps({"auth": auth, "exhausted": exhausted}),
+            json.dumps({
+                "auth": auth,
+                "exhausted": exhausted
+            }),
             mimetype="application/json",
         )
         if auth:
@@ -460,14 +459,14 @@ class DebuggedApplication:
         """Log the pin if needed."""
         if self.pin_logging and self.pin is not None:
             _log(
-                "info", " * To enable the debugger you need to enter the security pin:"
+                "info",
+                " * To enable the debugger you need to enter the security pin:"
             )
             _log("info", " * Debugger pin code: %s", self.pin)
         return Response("")
 
-    def __call__(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def __call__(self, environ: "WSGIEnvironment",
+                 start_response: "StartResponse") -> t.Iterable[bytes]:
         """Dispatch the requests."""
         # important: don't ever access a function here that reads the incoming
         # form data!  Otherwise the application won't have access to that data
@@ -478,25 +477,19 @@ class DebuggedApplication:
             cmd = request.args.get("cmd")
             arg = request.args.get("f")
             secret = request.args.get("s")
-            frame = self.frames.get(request.args.get("frm", type=int))  # type: ignore
+            frame = self.frames.get(request.args.get("frm",
+                                                     type=int))  # type: ignore
             if cmd == "resource" and arg:
                 response = self.get_resource(request, arg)  # type: ignore
             elif cmd == "pinauth" and secret == self.secret:
                 response = self.pin_auth(request)  # type: ignore
             elif cmd == "printpin" and secret == self.secret:
                 response = self.log_pin_request()  # type: ignore
-            elif (
-                self.evalex
-                and cmd is not None
-                and frame is not None
-                and self.secret == secret
-                and self.check_pin_trust(environ)
-            ):
-                response = self.execute_command(request, cmd, frame)  # type: ignore
-        elif (
-            self.evalex
-            and self.console_path is not None
-            and request.path == self.console_path
-        ):
+            elif (self.evalex and cmd is not None and frame is not None and
+                  self.secret == secret and self.check_pin_trust(environ)):
+                response = self.execute_command(request, cmd,
+                                                frame)  # type: ignore
+        elif (self.evalex and self.console_path is not None and
+              request.path == self.console_path):
             response = self.display_console(request)  # type: ignore
         return response(environ, start_response)

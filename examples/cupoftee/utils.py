@@ -1,6 +1,5 @@
 import re
 
-
 _sort_re = re.compile(r"\w+")
 
 

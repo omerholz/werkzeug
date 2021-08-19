@@ -1,20 +1,18 @@
 from datetime import datetime
 
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import join
-from sqlalchemy import MetaData
-from sqlalchemy import String
-from sqlalchemy import Table
-from sqlalchemy.orm import create_session
-from sqlalchemy.orm import mapper
-from sqlalchemy.orm import relation
-from sqlalchemy.orm import scoped_session
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    join,
+)
+from sqlalchemy.orm import create_session, mapper, relation, scoped_session
 
-from .utils import application
-from .utils import parse_creole
+from .utils import application, parse_creole
 
 try:
     from greenlet import getcurrent as get_ident
@@ -33,13 +31,14 @@ def new_db_session():
     application.  If there is no application bound to the context it
     raises an exception.
     """
-    return create_session(application.database_engine, autoflush=True, autocommit=False)
+    return create_session(application.database_engine,
+                          autoflush=True,
+                          autocommit=False)
 
 
 # and create a new global session factory.  Calling this object gives
 # you the current active session
 session = scoped_session(new_db_session, get_ident)
-
 
 # our database tables.
 page_table = Table(
@@ -116,10 +115,8 @@ class RevisionedPage(Page, Revision):
     query = session.query_property()
 
     def __init__(self):
-        raise TypeError(
-            "cannot create WikiPage instances, use the Page and "
-            "Revision classes for data manipulation."
-        )
+        raise TypeError("cannot create WikiPage instances, use the Page and "
+                        "Revision classes for data manipulation.")
 
     def __repr__(self):
         return f"<{type(self).__name__} {self.name!r}:{self.revision_id!r}>"
@@ -130,11 +127,8 @@ mapper(Revision, revision_table)
 mapper(
     Page,
     page_table,
-    properties=dict(
-        revisions=relation(
-            Revision, backref="page", order_by=Revision.revision_id.desc()
-        )
-    ),
+    properties=dict(revisions=relation(
+        Revision, backref="page", order_by=Revision.revision_id.desc())),
 )
 mapper(
     RevisionedPage,

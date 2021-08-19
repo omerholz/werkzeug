@@ -42,7 +42,8 @@ class ServerList(Page):
             self.order_desc = False
 
         self.players = reduce(lambda a, b: a + b.players, self.servers, [])
-        self.players = sorted(self.players, key=lambda a, b: unicodecmp(a.name, b.name))
+        self.players = sorted(self.players,
+                              key=lambda a, b: unicodecmp(a.name, b.name))
 
 
 class Server(Page):

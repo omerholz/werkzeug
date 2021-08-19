@@ -2,19 +2,16 @@ import time
 from os import path
 from threading import Thread
 
-from jinja2 import Environment
-from jinja2 import PackageLoader
-from werkzeug.exceptions import HTTPException
-from werkzeug.exceptions import NotFound
+from cupoftee.pages import MissingPage
+from jinja2 import Environment, PackageLoader
+
+from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.middleware.shared_data import SharedDataMiddleware
-from werkzeug.routing import Map
-from werkzeug.routing import Rule
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.routing import Map, Rule
+from werkzeug.wrappers import Request, Response
 
 from .db import Database
 from .network import ServerBrowser
-
 
 templates = path.join(path.dirname(__file__), "templates")
 pages = {}
@@ -34,8 +31,9 @@ class PageMeta(type):
         if d.get("url_rule") is not None:
             pages[cls.identifier] = cls
             url_map.add(
-                Rule(cls.url_rule, endpoint=cls.identifier, **cls.url_arguments)
-            )
+                Rule(cls.url_rule,
+                     endpoint=cls.identifier,
+                     **cls.url_arguments))
 
     @property
     def identifier(cls):
@@ -44,7 +42,6 @@ class PageMeta(type):
 
 def _with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
-
     class metaclass(type):
         def __new__(metacls, name, this_bases, d):
             return meta(name, bases, d)
@@ -79,7 +76,8 @@ class Page(_with_metaclass(PageMeta, object)):
 
 class Cup:
     def __init__(self, database, interval=120):
-        self.jinja_env = Environment(loader=PackageLoader("cupoftee"), autoescape=True)
+        self.jinja_env = Environment(loader=PackageLoader("cupoftee"),
+                                     autoescape=True)
         self.interval = interval
         self.db = Database(database)
         self.server_browser = ServerBrowser(self)
@@ -115,6 +113,3 @@ class Cup:
     def render_template(self, name, **context):
         template = self.jinja_env.get_template(name)
         return template.render(context)
-
-
-from cupoftee.pages import MissingPage

@@ -43,14 +43,14 @@ def _iter_module_paths() -> t.Iterator[str]:
             yield name
 
 
-def _remove_by_pattern(paths: t.Set[str], exclude_patterns: t.Set[str]) -> None:
+def _remove_by_pattern(paths: t.Set[str],
+                       exclude_patterns: t.Set[str]) -> None:
     for pattern in exclude_patterns:
         paths.difference_update(fnmatch.filter(paths, pattern))
 
 
-def _find_stat_paths(
-    extra_files: t.Set[str], exclude_patterns: t.Set[str]
-) -> t.Iterable[str]:
+def _find_stat_paths(extra_files: t.Set[str],
+                     exclude_patterns: t.Set[str]) -> t.Iterable[str]:
     """Find paths for the stat reloader to watch. Returns imported
     module files, Python files under non-system paths. Extra files and
     Python files under extra directories can also be scanned.
@@ -74,9 +74,9 @@ def _find_stat_paths(
             # path. As an optimization, ignore .git and .hg since
             # nothing interesting will be there.
             if root.startswith(_ignore_prefixes) or os.path.basename(root) in {
-                "__pycache__",
-                ".git",
-                ".hg",
+                    "__pycache__",
+                    ".git",
+                    ".hg",
             }:
                 dirs.clear()
                 continue
@@ -90,9 +90,8 @@ def _find_stat_paths(
     return paths
 
 
-def _find_watchdog_paths(
-    extra_files: t.Set[str], exclude_patterns: t.Set[str]
-) -> t.Iterable[str]:
+def _find_watchdog_paths(extra_files: t.Set[str],
+                         exclude_patterns: t.Set[str]) -> t.Iterable[str]:
     """Find paths for the stat reloader to watch. Looks at the same
     sources as the stat reloader, but watches everything under
     directories instead of individual files.
@@ -117,7 +116,9 @@ def _find_watchdog_paths(
 def _find_common_roots(paths: t.Iterable[str]) -> t.Iterable[str]:
     root: t.Dict[str, dict] = {}
 
-    for chunks in sorted((PurePath(x).parts for x in paths), key=len, reverse=True):
+    for chunks in sorted((PurePath(x).parts for x in paths),
+                         key=len,
+                         reverse=True):
         node = root
 
         for chunk in chunks:
@@ -129,7 +130,7 @@ def _find_common_roots(paths: t.Iterable[str]) -> t.Iterable[str]:
 
     def _walk(node: t.Mapping[str, dict], path: t.Tuple[str, ...]) -> None:
         for prefix, child in node.items():
-            _walk(child, path + (prefix,))
+            _walk(child, path + (prefix, ))
 
         if not node:
             rv.add(os.path.join(*path))
@@ -151,25 +152,22 @@ def _get_args_for_reloading() -> t.List[str]:
     # The value of __package__ indicates how Python was called. It may
     # not exist if a setuptools script is installed as an egg. It may be
     # set incorrectly for entry points created with pip on Windows.
-    if getattr(__main__, "__package__", None) is None or (
-        os.name == "nt"
-        and __main__.__package__ == ""
-        and not os.path.exists(py_script)
-        and os.path.exists(f"{py_script}.exe")
-    ):
+    if getattr(__main__, "__package__",
+               None) is None or (os.name == "nt" and __main__.__package__ == "" and
+                                 not os.path.exists(py_script) and
+                                 os.path.exists(f"{py_script}.exe")):
         # Executed a file, like "python app.py".
         py_script = os.path.abspath(py_script)
 
         if os.name == "nt":
             # Windows entry points have ".exe" extension and should be
             # called directly.
-            if not os.path.exists(py_script) and os.path.exists(f"{py_script}.exe"):
+            if not os.path.exists(py_script) and os.path.exists(
+                    f"{py_script}.exe"):
                 py_script += ".exe"
 
-            if (
-                os.path.splitext(sys.executable)[1] == ".exe"
-                and os.path.splitext(py_script)[1] == ".exe"
-            ):
+            if (os.path.splitext(sys.executable)[1] == ".exe" and
+                    os.path.splitext(py_script)[1] == ".exe"):
                 rv.pop(0)
 
         rv.append(py_script)
@@ -207,7 +205,10 @@ class ReloaderLoop:
         exclude_patterns: t.Optional[t.Iterable[str]] = None,
         interval: t.Union[int, float] = 1,
     ) -> None:
-        self.extra_files: t.Set[str] = {os.path.abspath(x) for x in extra_files or ()}
+        self.extra_files: t.Set[str] = {
+            os.path.abspath(x)
+            for x in extra_files or ()
+        }
         self.exclude_patterns: t.Set[str] = set(exclude_patterns or ())
         self.interval = interval
 
@@ -267,7 +268,8 @@ class StatReloaderLoop(ReloaderLoop):
         return super().__enter__()
 
     def run_step(self) -> None:
-        for name in chain(_find_stat_paths(self.extra_files, self.exclude_patterns)):
+        for name in chain(
+                _find_stat_paths(self.extra_files, self.exclude_patterns)):
             try:
                 mtime = os.stat(name).st_mtime
             except OSError:
@@ -285,8 +287,8 @@ class StatReloaderLoop(ReloaderLoop):
 
 class WatchdogReloaderLoop(ReloaderLoop):
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-        from watchdog.observers import Observer
         from watchdog.events import PatternMatchingEventHandler
+        from watchdog.observers import Observer
 
         super().__init__(*args, **kwargs)
         trigger_reload = self.trigger_reload
@@ -345,12 +347,12 @@ class WatchdogReloaderLoop(ReloaderLoop):
     def run_step(self) -> None:
         to_delete = set(self.watches)
 
-        for path in _find_watchdog_paths(self.extra_files, self.exclude_patterns):
+        for path in _find_watchdog_paths(self.extra_files,
+                                         self.exclude_patterns):
             if path not in self.watches:
                 try:
                     self.watches[path] = self.observer.schedule(
-                        self.event_handler, path, recursive=True
-                    )
+                        self.event_handler, path, recursive=True)
                 except OSError:
                     # Clear this path from list of watches We don't want
                     # the same error message showing again in the next
@@ -409,9 +411,9 @@ def run_with_reloader(
     import signal
 
     signal.signal(signal.SIGTERM, lambda *args: sys.exit(0))
-    reloader = reloader_loops[reloader_type](
-        extra_files=extra_files, exclude_patterns=exclude_patterns, interval=interval
-    )
+    reloader = reloader_loops[reloader_type](extra_files=extra_files,
+                                             exclude_patterns=exclude_patterns,
+                                             interval=interval)
 
     try:
         if os.environ.get("WERKZEUG_RUN_MAIN") == "true":

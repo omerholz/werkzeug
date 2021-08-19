@@ -1,37 +1,38 @@
 import typing as t
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 
-from .._internal import _to_str
-from ..datastructures import Headers
-from ..datastructures import HeaderSet
-from ..http import dump_cookie
-from ..http import HTTP_STATUS_CODES
-from ..utils import get_content_type
-from werkzeug.datastructures import CallbackDict
-from werkzeug.datastructures import ContentRange
-from werkzeug.datastructures import ResponseCacheControl
-from werkzeug.datastructures import WWWAuthenticate
-from werkzeug.http import COEP
-from werkzeug.http import COOP
-from werkzeug.http import dump_age
-from werkzeug.http import dump_csp_header
-from werkzeug.http import dump_header
-from werkzeug.http import dump_options_header
-from werkzeug.http import http_date
-from werkzeug.http import parse_age
-from werkzeug.http import parse_cache_control_header
-from werkzeug.http import parse_content_range_header
-from werkzeug.http import parse_csp_header
-from werkzeug.http import parse_date
-from werkzeug.http import parse_options_header
-from werkzeug.http import parse_set_header
-from werkzeug.http import parse_www_authenticate_header
-from werkzeug.http import quote_etag
-from werkzeug.http import unquote_etag
+from werkzeug.datastructures import (
+    CallbackDict,
+    ContentRange,
+    ResponseCacheControl,
+    WWWAuthenticate,
+)
+from werkzeug.http import (
+    COEP,
+    COOP,
+    dump_age,
+    dump_csp_header,
+    dump_header,
+    dump_options_header,
+    http_date,
+    parse_age,
+    parse_cache_control_header,
+    parse_content_range_header,
+    parse_csp_header,
+    parse_date,
+    parse_options_header,
+    parse_set_header,
+    parse_www_authenticate_header,
+    quote_etag,
+    unquote_etag,
+)
 from werkzeug.utils import header_property
+
+from .._internal import _to_str
+from ..datastructures import Headers, HeaderSet
+from ..http import HTTP_STATUS_CODES, dump_cookie
+from ..utils import get_content_type
 
 
 def _set_property(name: str, doc: t.Optional[str] = None) -> property:
@@ -46,9 +47,8 @@ def _set_property(name: str, doc: t.Optional[str] = None) -> property:
 
     def fset(
         self: "Response",
-        value: t.Optional[
-            t.Union[str, t.Dict[str, t.Union[str, int]], t.Iterable[str]]
-        ],
+        value: t.Optional[t.Union[str, t.Dict[str, t.Union[str, int]],
+                                  t.Iterable[str]]],
     ) -> None:
         if not value:
             del self.headers[name]
@@ -110,12 +110,9 @@ class Response:
     def __init__(
         self,
         status: t.Optional[t.Union[int, str, HTTPStatus]] = None,
-        headers: t.Optional[
-            t.Union[
-                t.Mapping[str, t.Union[str, int, t.Iterable[t.Union[str, int]]]],
-                t.Iterable[t.Tuple[str, t.Union[str, int]]],
-            ]
-        ] = None,
+        headers: t.Optional[t.Union[
+            t.Mapping[str, t.Union[str, int, t.Iterable[t.Union[str, int]]]],
+            t.Iterable[t.Tuple[str, t.Union[str, int]]], ]] = None,
         mimetype: t.Optional[str] = None,
         content_type: t.Optional[str] = None,
     ) -> None:
@@ -162,7 +159,8 @@ class Response:
 
         self._status, self._status_code = self._clean_status(value)
 
-    def _clean_status(self, value: t.Union[str, int, HTTPStatus]) -> t.Tuple[str, int]:
+    def _clean_status(
+            self, value: t.Union[str, int, HTTPStatus]) -> t.Tuple[str, int]:
         if isinstance(value, HTTPStatus):
             value = int(value)
         status = _to_str(value, self.charset)
@@ -285,11 +283,9 @@ class Response:
         :mimetype:`application/json` or :mimetype:`application/*+json`.
         """
         mt = self.mimetype
-        return mt is not None and (
-            mt == "application/json"
-            or mt.startswith("application/")
-            and mt.endswith("+json")
-        )
+        return mt is not None and (mt == "application/json" or
+                                   mt.startswith("application/") and
+                                   mt.endswith("+json"))
 
     # Common Descriptors
 
@@ -315,9 +311,9 @@ class Response:
 
         .. versionadded:: 0.5
         """
-
         def on_update(d: t.Dict[str, str]) -> None:
-            self.headers["Content-Type"] = dump_options_header(self.mimetype, d)
+            self.headers["Content-Type"] = dump_options_header(
+                self.mimetype, d)
 
         d = parse_options_header(self.headers.get("content-type", ""))[1]
         return CallbackDict(d, on_update)
@@ -443,7 +439,8 @@ class Response:
         return parse_date(value)
 
     @retry_after.setter
-    def retry_after(self, value: t.Optional[t.Union[datetime, int, str]]) -> None:
+    def retry_after(self, value: t.Optional[t.Union[datetime, int,
+                                                    str]]) -> None:
         if value is None:
             if "retry-after" in self.headers:
                 del self.headers["retry-after"]
@@ -486,16 +483,14 @@ class Response:
         directives that MUST be obeyed by all caching mechanisms along the
         request/response chain.
         """
-
         def on_update(cache_control: ResponseCacheControl) -> None:
             if not cache_control and "cache-control" in self.headers:
                 del self.headers["cache-control"]
             elif cache_control:
                 self.headers["Cache-Control"] = cache_control.to_header()
 
-        return parse_cache_control_header(
-            self.headers.get("cache-control"), on_update, ResponseCacheControl
-        )
+        return parse_cache_control_header(self.headers.get("cache-control"),
+                                          on_update, ResponseCacheControl)
 
     def set_etag(self, etag: str, weak: bool = False) -> None:
         """Set the etag, and override the old one if there was one."""
@@ -526,14 +521,14 @@ class Response:
 
         .. versionadded:: 0.7
         """
-
         def on_update(rng: ContentRange) -> None:
             if not rng:
                 del self.headers["content-range"]
             else:
                 self.headers["Content-Range"] = rng.to_header()
 
-        rv = parse_content_range_header(self.headers.get("content-range"), on_update)
+        rv = parse_content_range_header(self.headers.get("content-range"),
+                                        on_update)
         # always provide a content range object to make the descriptor
         # more user friendly.  It provides an unset() method that can be
         # used to remove the header quickly.
@@ -542,7 +537,8 @@ class Response:
         return rv
 
     @content_range.setter
-    def content_range(self, value: t.Optional[t.Union[ContentRange, str]]) -> None:
+    def content_range(self, value: t.Optional[t.Union[ContentRange,
+                                                      str]]) -> None:
         if not value:
             del self.headers["content-range"]
         elif isinstance(value, str):
@@ -555,7 +551,6 @@ class Response:
     @property
     def www_authenticate(self) -> WWWAuthenticate:
         """The ``WWW-Authenticate`` header in a parsed form."""
-
         def on_update(www_auth: WWWAuthenticate) -> None:
             if not www_auth and "www-authenticate" in self.headers:
                 del self.headers["www-authenticate"]
@@ -596,7 +591,8 @@ class Response:
         return "Access-Control-Allow-Credentials" in self.headers
 
     @access_control_allow_credentials.setter
-    def access_control_allow_credentials(self, value: t.Optional[bool]) -> None:
+    def access_control_allow_credentials(self,
+                                         value: t.Optional[bool]) -> None:
         if value is True:
             self.headers["Access-Control-Allow-Credentials"] = "true"
         else:

@@ -8,14 +8,8 @@ from difflib import unified_diff
 
 from werkzeug.utils import redirect
 
-from .database import Page
-from .database import Revision
-from .database import RevisionedPage
-from .database import session
-from .utils import format_datetime
-from .utils import generate_template
-from .utils import href
-from .utils import Response
+from .database import Page, Revision, RevisionedPage, session
+from .utils import Response, format_datetime, generate_template, href
 
 
 def on_show(request, page_name):
@@ -38,12 +32,9 @@ def on_edit(request, page_name):
     """Edit the current revision of a page."""
     change_note = error = ""
     revision = (
-        Revision.query.filter(
-            (Page.name == page_name) & (Page.page_id == Revision.page_id)
-        )
-        .order_by(Revision.revision_id.desc())
-        .first()
-    )
+        Revision.query.filter((Page.name == page_name) &
+                              (Page.page_id == Revision.page_id)).order_by(
+                                  Revision.revision_id.desc()).first())
     if revision is None:
         page = None
     else:
@@ -73,8 +64,7 @@ def on_edit(request, page_name):
             page_name=page_name,
             change_note=change_note,
             error=error,
-        )
-    )
+        ))
 
 
 def on_log(request, page_name):
@@ -97,11 +87,10 @@ def on_diff(request, page_name):
     else:
         revisions = {
             x.revision_id: x
-            for x in Revision.query.filter(
-                (Revision.revision_id.in_((old, new)))
-                & (Revision.page_id == Page.page_id)
-                & (Page.name == page_name)
-            )
+            for x in Revision.query.filter((Revision.revision_id.in_((old,
+                                                                      new))) &
+                                           (Revision.page_id == Page.page_id) &
+                                           (Page.name == page_name))
         }
         if len(revisions) != 2:
             error = "At least one of the revisions requested does not exist."
@@ -127,8 +116,7 @@ def on_diff(request, page_name):
             new_revision=new_rev,
             page=page,
             diff=diff,
-        )
-    )
+        ))
 
 
 def on_revert(request, page_name):
@@ -143,26 +131,20 @@ def on_revert(request, page_name):
 
     if rev_id:
         old_revision = Revision.query.filter(
-            (Revision.revision_id == rev_id)
-            & (Revision.page_id == Page.page_id)
-            & (Page.name == page_name)
-        ).first()
+            (Revision.revision_id == rev_id) &
+            (Revision.page_id == Page.page_id) &
+            (Page.name == page_name)).first()
         if old_revision:
             new_revision = (
-                Revision.query.filter(
-                    (Revision.page_id == Page.page_id) & (Page.name == page_name)
-                )
-                .order_by(Revision.revision_id.desc())
-                .first()
-            )
+                Revision.query.filter((Revision.page_id == Page.page_id) &
+                                      (Page.name == page_name)).order_by(
+                                          Revision.revision_id.desc()).first())
             if old_revision == new_revision:
                 error = "You tried to revert the current active revision."
             elif old_revision.text == new_revision.text:
-                error = (
-                    "There are no changes between the current "
-                    "revision and the revision you want to "
-                    "restore."
-                )
+                error = ("There are no changes between the current "
+                         "revision and the revision you want to "
+                         "restore.")
             else:
                 error = ""
                 page = old_revision.page
@@ -179,10 +161,10 @@ def on_revert(request, page_name):
                     return redirect(href(page_name))
 
     return Response(
-        generate_template(
-            "action_revert.html", error=error, old_revision=old_revision, page=page
-        )
-    )
+        generate_template("action_revert.html",
+                          error=error,
+                          old_revision=old_revision,
+                          page=page))
 
 
 def page_missing(request, page_name, revision_requested, protected=False):
@@ -200,4 +182,5 @@ def page_missing(request, page_name, revision_requested, protected=False):
 
 def missing_action(request, action):
     """Displayed if a user tried to access a action that does not exist."""
-    return Response(generate_template("missing_action.html", action=action), status=404)
+    return Response(generate_template("missing_action.html", action=action),
+                    status=404)

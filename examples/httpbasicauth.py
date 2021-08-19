@@ -2,8 +2,7 @@
 additional component.
 """
 from werkzeug.serving import run_simple
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.wrappers import Request, Response
 
 
 class Application:

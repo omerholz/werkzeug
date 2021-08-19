@@ -23,9 +23,7 @@ except ImportError:
     from profile import Profile  # type: ignore
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 
 class ProfilerMiddleware:
@@ -81,7 +79,8 @@ class ProfilerMiddleware:
         sort_by: t.Iterable[str] = ("time", "calls"),
         restrictions: t.Iterable[t.Union[str, int, float]] = (),
         profile_dir: t.Optional[str] = None,
-        filename_format: str = "{method}.{path}.{elapsed:.0f}ms.{time:.0f}.prof",
+        filename_format:
+        str = "{method}.{path}.{elapsed:.0f}ms.{time:.0f}.prof",
     ) -> None:
         self._app = app
         self._stream = stream
@@ -90,19 +89,19 @@ class ProfilerMiddleware:
         self._profile_dir = profile_dir
         self._filename_format = filename_format
 
-    def __call__(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def __call__(self, environ: "WSGIEnvironment",
+                 start_response: "StartResponse") -> t.Iterable[bytes]:
         response_body: t.List[bytes] = []
 
-        def catching_start_response(status, headers, exc_info=None):  # type: ignore
+        def catching_start_response(status,
+                                    headers,
+                                    exc_info=None):  # type: ignore
             start_response(status, headers, exc_info)
             return response_body.append
 
         def runapp() -> None:
             app_iter = self._app(
-                environ, t.cast("StartResponse", catching_start_response)
-            )
+                environ, t.cast("StartResponse", catching_start_response))
             response_body.extend(app_iter)
 
             if hasattr(app_iter, "close"):
@@ -120,7 +119,8 @@ class ProfilerMiddleware:
             else:
                 filename = self._filename_format.format(
                     method=environ["REQUEST_METHOD"],
-                    path=environ["PATH_INFO"].strip("/").replace("/", ".") or "root",
+                    path=environ["PATH_INFO"].strip("/").replace("/", ".") or
+                    "root",
                     elapsed=elapsed * 1000.0,
                     time=time.time(),
                 )

@@ -1,12 +1,14 @@
 from werkzeug.datastructures import Headers
-from werkzeug.sansio.multipart import Data
-from werkzeug.sansio.multipart import Epilogue
-from werkzeug.sansio.multipart import Field
-from werkzeug.sansio.multipart import File
-from werkzeug.sansio.multipart import MultipartDecoder
-from werkzeug.sansio.multipart import MultipartEncoder
-from werkzeug.sansio.multipart import NeedData
-from werkzeug.sansio.multipart import Preamble
+from werkzeug.sansio.multipart import (
+    Data,
+    Epilogue,
+    Field,
+    File,
+    MultipartDecoder,
+    MultipartEncoder,
+    NeedData,
+    Preamble,
+)
 
 
 def test_decoder_simple() -> None:
@@ -22,11 +24,7 @@ Content-Disposition: form-data; name="lname"; filename="bob"
 
 asdasd
 -----------------------------9704338192090380615194531385$--
-    """.replace(
-        "\n", "\r\n"
-    ).encode(
-        "utf-8"
-    )
+    """.replace("\n", "\r\n").encode("utf-8")
     decoder.receive_data(data)
     decoder.receive_data(None)
     events = [decoder.next_event()]
@@ -36,15 +34,15 @@ asdasd
         Preamble(data=b""),
         Field(
             name="fname",
-            headers=Headers([("Content-Disposition", 'form-data; name="fname"')]),
+            headers=Headers([("Content-Disposition", 'form-data; name="fname"')
+                             ]),
         ),
         Data(data="ß∑œß∂ƒå∂".encode(), more_data=False),
         File(
             name="lname",
             filename="bob",
-            headers=Headers(
-                [("Content-Disposition", 'form-data; name="lname"; filename="bob"')]
-            ),
+            headers=Headers([("Content-Disposition",
+                              'form-data; name="lname"; filename="bob"')]),
         ),
         Data(data=b"asdasd", more_data=False),
         Epilogue(data=b"    "),

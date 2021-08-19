@@ -53,8 +53,8 @@ from ._internal import _get_environ
 
 if t.TYPE_CHECKING:
     import typing_extensions as te
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIEnvironment
+
     from .datastructures import WWWAuthenticate
     from .sansio.response import Response
     from .wrappers.response import Response as WSGIResponse  # noqa: F401
@@ -80,9 +80,9 @@ class HTTPException(Exception):
         self.response = response
 
     @classmethod
-    def wrap(
-        cls, exception: t.Type[BaseException], name: t.Optional[str] = None
-    ) -> t.Type["HTTPException"]:
+    def wrap(cls,
+             exception: t.Type[BaseException],
+             name: t.Optional[str] = None) -> t.Type["HTTPException"]:
         """Create an exception that is a subclass of the calling HTTP
         exception and the ``exception`` argument.
 
@@ -114,9 +114,10 @@ class HTTPException(Exception):
             _description = cls.description
             show_exception = False
 
-            def __init__(
-                self, arg: t.Optional[t.Any] = None, *args: t.Any, **kwargs: t.Any
-            ) -> None:
+            def __init__(self,
+                         arg: t.Optional[t.Any] = None,
+                         *args: t.Any,
+                         **kwargs: t.Any) -> None:
                 super().__init__(*args, **kwargs)
 
                 if arg is None:
@@ -127,10 +128,8 @@ class HTTPException(Exception):
             @property
             def description(self) -> str:
                 if self.show_exception:
-                    return (
-                        f"{self._description}\n"
-                        f"{exception.__name__}: {exception.__str__(self)}"
-                    )
+                    return (f"{self._description}\n"
+                            f"{exception.__name__}: {exception.__str__(self)}")
 
                 return self._description  # type: ignore
 
@@ -148,7 +147,8 @@ class HTTPException(Exception):
         """The status name."""
         from .http import HTTP_STATUS_CODES
 
-        return HTTP_STATUS_CODES.get(self.code, "Unknown Error")  # type: ignore
+        return HTTP_STATUS_CODES.get(self.code,
+                                     "Unknown Error")  # type: ignore
 
     def get_description(
         self,
@@ -172,12 +172,10 @@ class HTTPException(Exception):
         scope: t.Optional[dict] = None,
     ) -> str:
         """Get the HTML body."""
-        return (
-            '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n'
-            f"<title>{self.code} {escape(self.name)}</title>\n"
-            f"<h1>{escape(self.name)}</h1>\n"
-            f"{self.get_description(environ)}\n"
-        )
+        return ('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n'
+                f"<title>{self.code} {escape(self.name)}</title>\n"
+                f"<h1>{escape(self.name)}</h1>\n"
+                f"{self.get_description(environ)}\n")
 
     def get_headers(
         self,
@@ -209,9 +207,8 @@ class HTTPException(Exception):
         headers = self.get_headers(environ, scope)
         return WSGIResponse(self.get_body(environ, scope), self.code, headers)
 
-    def __call__(
-        self, environ: "WSGIEnvironment", start_response: "StartResponse"
-    ) -> t.Iterable[bytes]:
+    def __call__(self, environ: "WSGIEnvironment",
+                 start_response: "StartResponse") -> t.Iterable[bytes]:
         """Call the exception as WSGI application.
 
         :param environ: the WSGI environment.
@@ -240,8 +237,7 @@ class BadRequest(HTTPException):
     code = 400
     description = (
         "The browser (or proxy) sent a request that this server could "
-        "not understand."
-    )
+        "not understand.")
 
 
 class BadRequestKeyError(BadRequest, KeyError):
@@ -255,7 +251,10 @@ class BadRequestKeyError(BadRequest, KeyError):
     #: useful in a debug mode.
     show_exception = False
 
-    def __init__(self, arg: t.Optional[str] = None, *args: t.Any, **kwargs: t.Any):
+    def __init__(self,
+                 arg: t.Optional[str] = None,
+                 *args: t.Any,
+                 **kwargs: t.Any):
         super().__init__(*args, **kwargs)
 
         if arg is None:
@@ -266,10 +265,8 @@ class BadRequestKeyError(BadRequest, KeyError):
     @property  # type: ignore
     def description(self) -> str:  # type: ignore
         if self.show_exception:
-            return (
-                f"{self._description}\n"
-                f"{KeyError.__name__}: {KeyError.__str__(self)}"
-            )
+            return (f"{self._description}\n"
+                    f"{KeyError.__name__}: {KeyError.__str__(self)}")
 
         return self._description
 
@@ -351,23 +348,21 @@ class Unauthorized(HTTPException):
         "The server could not verify that you are authorized to access"
         " the URL requested. You either supplied the wrong credentials"
         " (e.g. a bad password), or your browser doesn't understand"
-        " how to supply the credentials required."
-    )
+        " how to supply the credentials required.")
 
     def __init__(
         self,
         description: t.Optional[str] = None,
         response: t.Optional["Response"] = None,
-        www_authenticate: t.Optional[
-            t.Union["WWWAuthenticate", t.Iterable["WWWAuthenticate"]]
-        ] = None,
+        www_authenticate: t.Optional[t.Union[
+            "WWWAuthenticate", t.Iterable["WWWAuthenticate"]]] = None,
     ) -> None:
         super().__init__(description, response)
 
         from .datastructures import WWWAuthenticate
 
         if isinstance(www_authenticate, WWWAuthenticate):
-            www_authenticate = (www_authenticate,)
+            www_authenticate = (www_authenticate, )
 
         self.www_authenticate = www_authenticate
 
@@ -378,7 +373,8 @@ class Unauthorized(HTTPException):
     ) -> t.List[t.Tuple[str, str]]:
         headers = super().get_headers(environ, scope)
         if self.www_authenticate:
-            headers.extend(("WWW-Authenticate", str(x)) for x in self.www_authenticate)
+            headers.extend(
+                ("WWW-Authenticate", str(x)) for x in self.www_authenticate)
         return headers
 
 
@@ -393,8 +389,7 @@ class Forbidden(HTTPException):
     description = (
         "You don't have the permission to access the requested"
         " resource. It is either read-protected or not readable by the"
-        " server."
-    )
+        " server.")
 
 
 class NotFound(HTTPException):
@@ -406,8 +401,7 @@ class NotFound(HTTPException):
     code = 404
     description = (
         "The requested URL was not found on the server. If you entered"
-        " the URL manually please check your spelling and try again."
-    )
+        " the URL manually please check your spelling and try again.")
 
 
 class MethodNotAllowed(HTTPException):
@@ -454,12 +448,10 @@ class NotAcceptable(HTTPException):
     """
 
     code = 406
-    description = (
-        "The resource identified by the request is only capable of"
-        " generating response entities which have content"
-        " characteristics not acceptable according to the accept"
-        " headers sent in the request."
-    )
+    description = ("The resource identified by the request is only capable of"
+                   " generating response entities which have content"
+                   " characteristics not acceptable according to the accept"
+                   " headers sent in the request.")
 
 
 class RequestTimeout(HTTPException):
@@ -471,8 +463,7 @@ class RequestTimeout(HTTPException):
     code = 408
     description = (
         "The server closed the network connection because the browser"
-        " didn't finish the request within the specified time."
-    )
+        " didn't finish the request within the specified time.")
 
 
 class Conflict(HTTPException):
@@ -488,8 +479,7 @@ class Conflict(HTTPException):
     description = (
         "A conflict happened while processing the request. The"
         " resource might have been modified while the request was being"
-        " processed."
-    )
+        " processed.")
 
 
 class Gone(HTTPException):
@@ -502,8 +492,7 @@ class Gone(HTTPException):
     description = (
         "The requested URL is no longer available on this server and"
         " there is no forwarding address. If you followed a link from a"
-        " foreign page, please contact the author of this page."
-    )
+        " foreign page, please contact the author of this page.")
 
 
 class LengthRequired(HTTPException):
@@ -514,10 +503,8 @@ class LengthRequired(HTTPException):
     """
 
     code = 411
-    description = (
-        "A request with this method requires a valid <code>Content-"
-        "Length</code> header."
-    )
+    description = ("A request with this method requires a valid <code>Content-"
+                   "Length</code> header.")
 
 
 class PreconditionFailed(HTTPException):
@@ -553,8 +540,7 @@ class RequestURITooLarge(HTTPException):
     code = 414
     description = (
         "The length of the requested URL exceeds the capacity limit for"
-        " this server. The request cannot be processed."
-    )
+        " this server. The request cannot be processed.")
 
 
 class UnsupportedMediaType(HTTPException):
@@ -641,8 +627,7 @@ class UnprocessableEntity(HTTPException):
     code = 422
     description = (
         "The request was well-formed but was unable to be followed due"
-        " to semantic errors."
-    )
+        " to semantic errors.")
 
 
 class Locked(HTTPException):
@@ -666,8 +651,7 @@ class FailedDependency(HTTPException):
     description = (
         "The method could not be performed on the resource because the"
         " requested action depended on another action and that action"
-        " failed."
-    )
+        " failed.")
 
 
 class PreconditionRequired(HTTPException):
@@ -683,10 +667,8 @@ class PreconditionRequired(HTTPException):
     """
 
     code = 428
-    description = (
-        "This request is required to be conditional; try using"
-        ' "If-Match" or "If-Unmodified-Since".'
-    )
+    description = ("This request is required to be conditional; try using"
+                   ' "If-Match" or "If-Unmodified-Since".')
 
 
 class _RetryAfter(HTTPException):
@@ -779,11 +761,9 @@ class InternalServerError(HTTPException):
     """
 
     code = 500
-    description = (
-        "The server encountered an internal error and was unable to"
-        " complete your request. Either the server is overloaded or"
-        " there is an error in the application."
-    )
+    description = ("The server encountered an internal error and was unable to"
+                   " complete your request. Either the server is overloaded or"
+                   " there is an error in the application.")
 
     def __init__(
         self,
@@ -841,8 +821,7 @@ class ServiceUnavailable(_RetryAfter):
     description = (
         "The server is temporarily unable to service your request due"
         " to maintenance downtime or capacity problems. Please try"
-        " again later."
-    )
+        " again later.")
 
 
 class GatewayTimeout(HTTPException):
@@ -909,9 +888,8 @@ class Aborter:
         if extra is not None:
             self.mapping.update(extra)
 
-    def __call__(
-        self, code: t.Union[int, "Response"], *args: t.Any, **kwargs: t.Any
-    ) -> "te.NoReturn":
+    def __call__(self, code: t.Union[int, "Response"], *args: t.Any,
+                 **kwargs: t.Any) -> "te.NoReturn":
         from .sansio.response import Response
 
         if isinstance(code, Response):
@@ -923,9 +901,8 @@ class Aborter:
         raise self.mapping[code](*args, **kwargs)
 
 
-def abort(
-    status: t.Union[int, "Response"], *args: t.Any, **kwargs: t.Any
-) -> "te.NoReturn":
+def abort(status: t.Union[int, "Response"], *args: t.Any,
+          **kwargs: t.Any) -> "te.NoReturn":
     """Raises an :py:exc:`HTTPException` for the given status code or WSGI
     application.
 

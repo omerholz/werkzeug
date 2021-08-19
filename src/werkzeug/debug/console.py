@@ -5,9 +5,7 @@ from html import escape
 from types import CodeType
 
 from ..local import Local
-from .repr import debug_repr
-from .repr import dump
-from .repr import helper
+from .repr import debug_repr, dump, helper
 
 if t.TYPE_CHECKING:
     import codeop  # noqa: F401
@@ -59,7 +57,6 @@ class HTMLStringO:
 
 class ThreadedStream:
     """Thread-local wrapper for sys.stdout for the interactive console."""
-
     @staticmethod
     def push() -> None:
         if not isinstance(sys.stdout, ThreadedStream):
@@ -129,7 +126,8 @@ class _ConsoleLoader:
 class _InteractiveConsole(code.InteractiveInterpreter):
     locals: t.Dict[str, t.Any]
 
-    def __init__(self, globals: t.Dict[str, t.Any], locals: t.Dict[str, t.Any]) -> None:
+    def __init__(self, globals: t.Dict[str, t.Any],
+                 locals: t.Dict[str, t.Any]) -> None:
         self.loader = _ConsoleLoader()
         locals = {
             **globals,

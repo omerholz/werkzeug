@@ -51,7 +51,7 @@ class ServerBrowser(Syncable):
 
         for n in range(0, len(data) // 6):
             addr = (
-                ".".join(map(str, map(ord, data[n * 6 : n * 6 + 4]))),
+                ".".join(map(str, map(ord, data[n * 6:n * 6 + 4]))),
                 ord(data[n * 6 + 5]) * 256 + ord(data[n * 6 + 4]),
             )
             server_id = f"{addr[0]}:{addr[1]}"
@@ -85,8 +85,7 @@ class Server(Syncable):
         self.map = map_name.decode("latin1")
         self.gametype = bits[3]
         self.flags, self.progression, player_count, self.max_players = map(
-            int, bits[4:8]
-        )
+            int, bits[4:8])
 
         # sync the player stats
         players = {p.name: p for p in self.players}

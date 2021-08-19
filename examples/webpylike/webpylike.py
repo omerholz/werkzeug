@@ -4,12 +4,14 @@ provides.
 """
 import re
 
-from werkzeug.exceptions import HTTPException
-from werkzeug.exceptions import MethodNotAllowed
-from werkzeug.exceptions import NotFound
-from werkzeug.exceptions import NotImplemented
-from werkzeug.wrappers import Request
+from werkzeug.exceptions import (
+    HTTPException,
+    MethodNotAllowed,
+    NotFound,
+    NotImplemented,
+)
 from werkzeug.wrappers import Response  # noqa: F401
+from werkzeug.wrappers import Request
 
 
 class View:
@@ -35,9 +37,8 @@ class WebPyApp:
     """
 
     def __init__(self, urls, views):
-        self.urls = [
-            (re.compile(f"^{urls[i]}$"), urls[i + 1]) for i in range(0, len(urls), 2)
-        ]
+        self.urls = [(re.compile(f"^{urls[i]}$"), urls[i + 1])
+                     for i in range(0, len(urls), 2)]
         self.views = views
 
     def __call__(self, environ, start_response):
@@ -47,7 +48,8 @@ class WebPyApp:
                 match = regex.match(req.path)
                 if match is not None:
                     view = self.views[view](self, req)
-                    if req.method not in ("GET", "HEAD", "POST", "DELETE", "PUT"):
+                    if req.method not in ("GET", "HEAD", "POST", "DELETE",
+                                          "PUT"):
                         raise NotImplemented()  # noqa: F901
                     resp = getattr(view, req.method)(*match.groups())
                     break

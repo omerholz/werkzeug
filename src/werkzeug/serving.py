@@ -21,17 +21,12 @@ import sys
 import typing as t
 import warnings
 from datetime import datetime as dt
-from datetime import timedelta
-from datetime import timezone
-from http.server import BaseHTTPRequestHandler
-from http.server import HTTPServer
+from datetime import timedelta, timezone
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from ._internal import _log
-from ._internal import _wsgi_encoding_dance
+from ._internal import _log, _wsgi_encoding_dance
 from .exceptions import InternalServerError
-from .urls import uri_to_iri
-from .urls import url_parse
-from .urls import url_unquote
+from .urls import uri_to_iri, url_parse, url_unquote
 
 try:
     import ssl
@@ -67,16 +62,16 @@ except AttributeError:
     af_unix = None  # type: ignore
 
 LISTEN_QUEUE = 128
-can_open_by_fd = not platform.system() == "Windows" and hasattr(socket, "fromfd")
+can_open_by_fd = not platform.system() == "Windows" and hasattr(
+    socket, "fromfd")
 
-_TSSLContextArg = t.Optional[
-    t.Union["ssl.SSLContext", t.Tuple[str, t.Optional[str]], "te.Literal['adhoc']"]
-]
+_TSSLContextArg = t.Optional[t.Union["ssl.SSLContext",
+                                     t.Tuple[str, t.Optional[str]],
+                                     "te.Literal['adhoc']"]]
 
 if t.TYPE_CHECKING:
     import typing_extensions as te  # noqa: F401
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import WSGIApplication, WSGIEnvironment
     from cryptography.hazmat.primitives.asymmetric.rsa import (
         RSAPrivateKeyWithSerialization,
     )
@@ -131,7 +126,7 @@ class DechunkedInput(io.RawIOBase):
                     self._len -= len(buf) - read
                     read = len(buf)
                 else:
-                    buf[read : read + n] = self._rfile.read(n)
+                    buf[read:read + n] = self._rfile.read(n)
                     self._len -= n
                     read += n
 
@@ -219,7 +214,8 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
                     value = f"{environ[key]},{value}"
             environ[key] = value
 
-        if environ.get("HTTP_TRANSFER_ENCODING", "").strip().lower() == "chunked":
+        if environ.get("HTTP_TRANSFER_ENCODING",
+                       "").strip().lower() == "chunked":
             environ["wsgi.input_terminated"] = True
             environ["wsgi.input"] = DechunkedInput(environ["wsgi.input"])
 
@@ -234,7 +230,8 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
             peer_cert = self.connection.getpeercert(binary_form=True)
             if peer_cert is not None:
                 # Nginx and Apache use PEM format.
-                environ["SSL_CLIENT_CERT"] = ssl.DER_cert_to_PEM_cert(peer_cert)
+                environ["SSL_CLIENT_CERT"] = ssl.DER_cert_to_PEM_cert(
+                    peer_cert)
         except ValueError:
             # SSL handshake hasn't finished.
             self.server.log("error", "Cannot fetch SSL peer certificate info")
@@ -272,12 +269,9 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
                     self.send_header(key, value)
                     key = key.lower()
                     header_keys.add(key)
-                if not (
-                    "content-length" in header_keys
-                    or environ["REQUEST_METHOD"] == "HEAD"
-                    or code < 200
-                    or code in (204, 304)
-                ):
+                if not ("content-length" in header_keys or
+                        environ["REQUEST_METHOD"] == "HEAD" or code < 200 or
+                        code in (204, 304)):
                     self.close_connection = True
                     self.send_header("Connection", "close")
                 if "server" not in header_keys:
@@ -334,7 +328,8 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
                 execute(InternalServerError())
             except Exception:
                 pass
-            self.server.log("error", "Error on request:\n%s", traceback.plaintext)
+            self.server.log("error", "Error on request:\n%s",
+                            traceback.plaintext)
 
     def handle(self) -> None:
         """Handles a request ignoring dropped connections."""
@@ -359,8 +354,9 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
         self.server._BaseServer__shutdown_request = True  # type: ignore
 
     def connection_dropped(
-        self, error: BaseException, environ: t.Optional["WSGIEnvironment"] = None
-    ) -> None:
+            self,
+            error: BaseException,
+            environ: t.Optional["WSGIEnvironment"] = None) -> None:
         """Called if the connection was closed by the client.  By default
         nothing happens.
         """
@@ -373,7 +369,9 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
         elif self.parse_request():
             self.run_wsgi()
 
-    def send_response(self, code: int, message: t.Optional[str] = None) -> None:
+    def send_response(self,
+                      code: int,
+                      message: t.Optional[str] = None) -> None:
         """Send the response header and log the response code."""
         self.log_request(code)
         if message is None:
@@ -397,9 +395,9 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
     def port_integer(self) -> int:
         return self.client_address[1]
 
-    def log_request(
-        self, code: t.Union[int, str] = "-", size: t.Union[int, str] = "-"
-    ) -> None:
+    def log_request(self,
+                    code: t.Union[int, str] = "-",
+                    size: t.Union[int, str] = "-") -> None:
         try:
             path = uri_to_iri(self.path)
             msg = f"{self.command} {path} {self.request_version}"
@@ -462,48 +460,45 @@ def generate_adhoc_ssl_pair(
 ) -> t.Tuple["Certificate", "RSAPrivateKeyWithSerialization"]:
     try:
         from cryptography import x509
-        from cryptography.x509.oid import NameOID
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
     except ImportError:
-        raise TypeError("Using ad-hoc certificates requires the cryptography library.")
+        raise TypeError(
+            "Using ad-hoc certificates requires the cryptography library.")
 
     backend = default_backend()
-    pkey = rsa.generate_private_key(
-        public_exponent=65537, key_size=2048, backend=backend
-    )
+    pkey = rsa.generate_private_key(public_exponent=65537,
+                                    key_size=2048,
+                                    backend=backend)
 
     # pretty damn sure that this is not actually accepted by anyone
     if cn is None:
         cn = "*"
 
-    subject = x509.Name(
-        [
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Dummy Certificate"),
-            x509.NameAttribute(NameOID.COMMON_NAME, cn),
-        ]
-    )
+    subject = x509.Name([
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Dummy Certificate"),
+        x509.NameAttribute(NameOID.COMMON_NAME, cn),
+    ])
 
     backend = default_backend()
-    cert = (
-        x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(subject)
-        .public_key(pkey.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(dt.now(timezone.utc))
-        .not_valid_after(dt.now(timezone.utc) + timedelta(days=365))
-        .add_extension(x509.ExtendedKeyUsage([x509.OID_SERVER_AUTH]), critical=False)
-        .add_extension(x509.SubjectAlternativeName([x509.DNSName(cn)]), critical=False)
-        .sign(pkey, hashes.SHA256(), backend)
-    )
+    cert = (x509.CertificateBuilder().subject_name(subject).issuer_name(
+        subject).public_key(pkey.public_key()).serial_number(
+            x509.random_serial_number()).not_valid_before(dt.now(
+                timezone.utc)).not_valid_after(
+                    dt.now(timezone.utc) + timedelta(days=365)).add_extension(
+                        x509.ExtendedKeyUsage([x509.OID_SERVER_AUTH]),
+                        critical=False).add_extension(
+                            x509.SubjectAlternativeName([x509.DNSName(cn)]),
+                            critical=False).sign(pkey, hashes.SHA256(),
+                                                 backend))
     return cert, pkey
 
 
-def make_ssl_devcert(
-    base_path: str, host: t.Optional[str] = None, cn: t.Optional[str] = None
-) -> t.Tuple[str, str]:
+def make_ssl_devcert(base_path: str,
+                     host: t.Optional[str] = None,
+                     cn: t.Optional[str] = None) -> t.Tuple[str, str]:
     """Creates an SSL key for development.  This should be used instead of
     the ``'adhoc'`` key which generates a new cert on each server start.
     It accepts a path for where it should store the key and cert and
@@ -539,16 +534,15 @@ def make_ssl_devcert(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,
                 encryption_algorithm=serialization.NoEncryption(),
-            )
-        )
+            ))
 
     return cert_file, pkey_file
 
 
 def generate_adhoc_ssl_context() -> "ssl.SSLContext":
     """Generates an adhoc SSL context for the development server."""
-    import tempfile
     import atexit
+    import tempfile
 
     cert, pkey = generate_adhoc_ssl_pair()
 
@@ -575,9 +569,9 @@ def generate_adhoc_ssl_context() -> "ssl.SSLContext":
     return ctx
 
 
-def load_ssl_context(
-    cert_file: str, pkey_file: t.Optional[str] = None, protocol: t.Optional[int] = None
-) -> "ssl.SSLContext":
+def load_ssl_context(cert_file: str,
+                     pkey_file: t.Optional[str] = None,
+                     protocol: t.Optional[int] = None) -> "ssl.SSLContext":
     """Loads SSL context from cert/private key files and optional protocol.
     Many parameters are directly taken from the API of
     :py:class:`ssl.SSLContext`.
@@ -614,16 +608,15 @@ def select_address_family(host: str, port: int) -> socket.AddressFamily:
 
 
 def get_sockaddr(
-    host: str, port: int, family: socket.AddressFamily
-) -> t.Union[t.Tuple[str, int], str]:
+        host: str, port: int,
+        family: socket.AddressFamily) -> t.Union[t.Tuple[str, int], str]:
     """Return a fully qualified socket address that can be passed to
     :func:`socket.bind`."""
     if family == af_unix:
         return host.split("://", 1)[1]
     try:
-        res = socket.getaddrinfo(
-            host, port, family, socket.SOCK_STREAM, socket.IPPROTO_TCP
-        )
+        res = socket.getaddrinfo(host, port, family, socket.SOCK_STREAM,
+                                 socket.IPPROTO_TCP)
     except socket.gaierror:
         return host, port
     return res[0][4]  # type: ignore
@@ -648,7 +641,6 @@ def get_interface_ip(family: socket.AddressFamily) -> str:
 
 
 class BaseWSGIServer(HTTPServer):
-
     """Simple single-threaded, single-process WSGI server."""
 
     multithread = False
@@ -671,7 +663,8 @@ class BaseWSGIServer(HTTPServer):
         self.address_family = select_address_family(host, port)
 
         if fd is not None:
-            real_sock = socket.fromfd(fd, self.address_family, socket.SOCK_STREAM)
+            real_sock = socket.fromfd(fd, self.address_family,
+                                      socket.SOCK_STREAM)
             port = 0
 
         server_address = get_sockaddr(host, int(port), self.address_family)
@@ -703,7 +696,8 @@ class BaseWSGIServer(HTTPServer):
             if ssl_context == "adhoc":
                 ssl_context = generate_adhoc_ssl_context()
 
-            self.socket = ssl_context.wrap_socket(self.socket, server_side=True)
+            self.socket = ssl_context.wrap_socket(self.socket,
+                                                  server_side=True)
             self.ssl_context: t.Optional["ssl.SSLContext"] = ssl_context
         else:
             self.ssl_context = None
@@ -720,7 +714,8 @@ class BaseWSGIServer(HTTPServer):
         finally:
             self.server_close()
 
-    def handle_error(self, request: t.Any, client_address: t.Tuple[str, int]) -> None:
+    def handle_error(self, request: t.Any,
+                     client_address: t.Tuple[str, int]) -> None:
         if self.passthrough_errors:
             raise
 
@@ -728,7 +723,6 @@ class BaseWSGIServer(HTTPServer):
 
 
 class ThreadedWSGIServer(socketserver.ThreadingMixIn, BaseWSGIServer):
-
     """A WSGI server that does threading."""
 
     multithread = True
@@ -736,7 +730,6 @@ class ThreadedWSGIServer(socketserver.ThreadingMixIn, BaseWSGIServer):
 
 
 class ForkingWSGIServer(ForkingMixIn, BaseWSGIServer):
-
     """A WSGI server that does forking."""
 
     multiprocess = True
@@ -754,9 +747,8 @@ class ForkingWSGIServer(ForkingMixIn, BaseWSGIServer):
     ) -> None:
         if not can_fork:
             raise ValueError("Your platform does not support forking.")
-        BaseWSGIServer.__init__(
-            self, host, port, app, handler, passthrough_errors, ssl_context, fd
-        )
+        BaseWSGIServer.__init__(self, host, port, app, handler,
+                                passthrough_errors, ssl_context, fd)
         self.max_children = processes
 
 
@@ -775,11 +767,16 @@ def make_server(
     or just processes one request after another.
     """
     if threaded and processes > 1:
-        raise ValueError("cannot have a multithreaded and multi process server.")
+        raise ValueError(
+            "cannot have a multithreaded and multi process server.")
     elif threaded:
-        return ThreadedWSGIServer(
-            host, port, app, request_handler, passthrough_errors, ssl_context, fd=fd
-        )
+        return ThreadedWSGIServer(host,
+                                  port,
+                                  app,
+                                  request_handler,
+                                  passthrough_errors,
+                                  ssl_context,
+                                  fd=fd)
     elif processes > 1:
         return ForkingWSGIServer(
             host,
@@ -792,9 +789,13 @@ def make_server(
             fd=fd,
         )
     else:
-        return BaseWSGIServer(
-            host, port, app, request_handler, passthrough_errors, ssl_context, fd=fd
-        )
+        return BaseWSGIServer(host,
+                              port,
+                              app,
+                              request_handler,
+                              passthrough_errors,
+                              ssl_context,
+                              fd=fd)
 
 
 def is_running_from_reloader() -> bool:
@@ -820,7 +821,8 @@ def run_simple(
     threaded: bool = False,
     processes: int = 1,
     request_handler: t.Optional[t.Type[WSGIRequestHandler]] = None,
-    static_files: t.Optional[t.Dict[str, t.Union[str, t.Tuple[str, str]]]] = None,
+    static_files: t.Optional[t.Dict[str, t.Union[str, t.Tuple[str,
+                                                              str]]]] = None,
     passthrough_errors: bool = False,
     ssl_context: t.Optional[_TSSLContextArg] = None,
 ) -> None:
@@ -914,8 +916,7 @@ def run_simple(
         all_addresses_message = (
             " * Running on all addresses.\n"
             "   WARNING: This is a development server. Do not use it in"
-            " a production deployment."
-        )
+            " a production deployment.")
 
         if sock.family == af_unix:
             _log("info", " * Running on %s (Press CTRL+C to quit)", hostname)
@@ -966,11 +967,9 @@ def run_simple(
         # port is actually available.
         if not is_running_from_reloader():
             if port == 0 and not can_open_by_fd:
-                raise ValueError(
-                    "Cannot bind to a random port with enabled "
-                    "reloader if the Python interpreter does "
-                    "not support socket opening by fd."
-                )
+                raise ValueError("Cannot bind to a random port with enabled "
+                                 "reloader if the Python interpreter does "
+                                 "not support socket opening by fd.")
 
             # Create and destroy a socket so that any exceptions are
             # raised before we spawn a separate Python interpreter and
@@ -1018,10 +1017,8 @@ def run_with_reloader(*args: t.Any, **kwargs: t.Any) -> None:
     from ._reloader import run_with_reloader as _rwr
 
     warnings.warn(
-        (
-            "'run_with_reloader' is a private API, it will no longer be"
-            " accessible in Werkzeug 2.1. Use 'run_simple' instead."
-        ),
+        ("'run_with_reloader' is a private API, it will no longer be"
+         " accessible in Werkzeug 2.1. Use 'run_simple' instead."),
         DeprecationWarning,
         stacklevel=2,
     )
@@ -1031,9 +1028,11 @@ def run_with_reloader(*args: t.Any, **kwargs: t.Any) -> None:
 def main() -> None:
     """A simple command-line interface for :py:func:`run_simple`."""
     import argparse
+
     from .utils import import_string
 
-    _log("warning", "This CLI is deprecated and will be removed in version 2.1.")
+    _log("warning",
+         "This CLI is deprecated and will be removed in version 2.1.")
 
     parser = argparse.ArgumentParser(
         description="Run the given WSGI application with the development server.",
@@ -1058,8 +1057,8 @@ def main() -> None:
         help="Reload the process if modules change.",
     )
     parser.add_argument(
-        "application", help="Application to import and serve, in the form module:app."
-    )
+        "application",
+        help="Application to import and serve, in the form module:app.")
     args = parser.parse_args()
     hostname, port = None, None
 

@@ -1,12 +1,8 @@
 from datetime import datetime
 
-from couchdb.mapping import BooleanField
-from couchdb.mapping import DateTimeField
-from couchdb.mapping import Document
-from couchdb.mapping import TextField
+from couchdb.mapping import BooleanField, DateTimeField, Document, TextField
 
-from .utils import get_random_uid
-from .utils import url_for
+from .utils import get_random_uid, url_for
 
 
 class URL(Document):
@@ -30,9 +26,8 @@ class URL(Document):
             while 1:
                 id = new_id if new_id else get_random_uid()
                 try:
-                    docid = URL.db.resource.put(content=self._data, path=f"/{id}/")[
-                        "id"
-                    ]
+                    docid = URL.db.resource.put(content=self._data,
+                                                path=f"/{id}/")["id"]
                 except Exception:
                     continue
                 if docid:

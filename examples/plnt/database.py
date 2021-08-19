@@ -1,14 +1,5 @@
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import MetaData
-from sqlalchemy import String
-from sqlalchemy import Table
-from sqlalchemy.orm import create_session
-from sqlalchemy.orm import dynamic_loader
-from sqlalchemy.orm import mapper
-from sqlalchemy.orm import scoped_session
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
+from sqlalchemy.orm import create_session, dynamic_loader, mapper, scoped_session
 
 from .utils import application
 
@@ -19,12 +10,13 @@ except ImportError:
 
 
 def new_db_session():
-    return create_session(application.database_engine, autoflush=True, autocommit=False)
+    return create_session(application.database_engine,
+                          autoflush=True,
+                          autocommit=False)
 
 
 metadata = MetaData()
 session = scoped_session(new_db_session, get_ident)
-
 
 blog_table = Table(
     "blogs",
@@ -71,4 +63,6 @@ class Entry:
 
 
 mapper(Entry, entry_table)
-mapper(Blog, blog_table, properties=dict(entries=dynamic_loader(Entry, backref="blog")))
+mapper(Blog,
+       blog_table,
+       properties=dict(entries=dynamic_loader(Entry, backref="blog")))

@@ -6,21 +6,19 @@ from io import BytesIO
 import pytest
 
 from werkzeug._internal import _to_bytes
-from werkzeug.datastructures import Authorization
-from werkzeug.datastructures import FileStorage
-from werkzeug.datastructures import Headers
-from werkzeug.datastructures import MultiDict
+from werkzeug.datastructures import Authorization, FileStorage, Headers, MultiDict
 from werkzeug.formparser import parse_form_data
 from werkzeug.http import parse_authorization_header
-from werkzeug.test import Client
-from werkzeug.test import ClientRedirectError
-from werkzeug.test import create_environ
-from werkzeug.test import EnvironBuilder
-from werkzeug.test import run_wsgi_app
-from werkzeug.test import stream_encode_multipart
+from werkzeug.test import (
+    Client,
+    ClientRedirectError,
+    EnvironBuilder,
+    create_environ,
+    run_wsgi_app,
+    stream_encode_multipart,
+)
 from werkzeug.utils import redirect
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
+from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import pop_path_info
 
 
@@ -28,7 +26,8 @@ def cookie_app(environ, start_response):
     """A WSGI application which sets a cookie, and returns as a response any
     cookie which exists.
     """
-    response = Response(environ.get("HTTP_COOKIE", "No Cookie"), mimetype="text/plain")
+    response = Response(environ.get("HTTP_COOKIE", "No Cookie"),
+                        mimetype="text/plain")
     response.set_cookie("test", "test")
     return response(environ, start_response)
 
@@ -41,11 +40,12 @@ def redirect_loop_app(environ, start_response):
 def redirect_with_get_app(environ, start_response):
     req = Request(environ)
     if req.url not in (
-        "http://localhost/",
-        "http://localhost/first/request",
-        "http://localhost/some/redirect/",
+            "http://localhost/",
+            "http://localhost/first/request",
+            "http://localhost/some/redirect/",
     ):
-        raise AssertionError(f'redirect_demo_app() did not expect URL "{req.url}"')
+        raise AssertionError(
+            f'redirect_demo_app() did not expect URL "{req.url}"')
     if "/some/redirect" not in req.url:
         response = redirect("http://localhost/some/redirect/")
     else:
@@ -69,7 +69,8 @@ def external_subdomain_redirect_demo_app(environ, start_response):
 def multi_value_post_app(environ, start_response):
     req = Request(environ)
     assert req.form["field"] == "val1", req.form["field"]
-    assert req.form.getlist("field") == ["val1", "val2"], req.form.getlist("field")
+    assert req.form.getlist("field") == ["val1",
+                                         "val2"], req.form.getlist("field")
     response = Response("ok")
     return response(environ, start_response)
 
@@ -165,9 +166,9 @@ def test_environ_builder_data():
     b = EnvironBuilder(data={"foo": [BytesIO(), BytesIO()]})
     check_list_content(b, 2)
 
-    b = EnvironBuilder(data={"foo": (BytesIO(),)})
+    b = EnvironBuilder(data={"foo": (BytesIO(), )})
     check_list_content(b, 1)
-    b = EnvironBuilder(data={"foo": [(BytesIO(),), (BytesIO(),)]})
+    b = EnvironBuilder(data={"foo": [(BytesIO(), ), (BytesIO(), )]})
     check_list_content(b, 2)
 
 
@@ -205,7 +206,8 @@ def test_environ_builder_headers_content_type():
     b = EnvironBuilder(headers={"Content-Type": "text/plain"})
     env = b.get_environ()
     assert env["CONTENT_TYPE"] == "text/plain"
-    b = EnvironBuilder(content_type="text/html", headers={"Content-Type": "text/plain"})
+    b = EnvironBuilder(content_type="text/html",
+                       headers={"Content-Type": "text/plain"})
     env = b.get_environ()
     assert env["CONTENT_TYPE"] == "text/html"
     b = EnvironBuilder()
@@ -286,9 +288,10 @@ def test_basic_auth():
 
 
 def test_auth_object():
-    builder = EnvironBuilder(
-        auth=Authorization("digest", {"username": "u", "password": "p"})
-    )
+    builder = EnvironBuilder(auth=Authorization("digest", {
+        "username": "u",
+        "password": "p"
+    }))
     request = builder.get_request()
     assert request.headers["Authorization"].startswith("Digest ")
 
@@ -296,18 +299,19 @@ def test_auth_object():
 def test_environ_builder_stream_switch():
     d = MultiDict(dict(foo="bar", blub="blah", hu="hum"))
     for use_tempfile in False, True:
-        stream, length, boundary = stream_encode_multipart(
-            d, use_tempfile, threshold=150
-        )
+        stream, length, boundary = stream_encode_multipart(d,
+                                                           use_tempfile,
+                                                           threshold=150)
         assert isinstance(stream, BytesIO) != use_tempfile
 
-        form = parse_form_data(
-            {
-                "wsgi.input": stream,
-                "CONTENT_LENGTH": str(length),
-                "CONTENT_TYPE": f'multipart/form-data; boundary="{boundary}"',
-            }
-        )[1]
+        form = parse_form_data({
+            "wsgi.input":
+            stream,
+            "CONTENT_LENGTH":
+            str(length),
+            "CONTENT_TYPE":
+            f'multipart/form-data; boundary="{boundary}"',
+        })[1]
         assert form == d
         stream.close()
 
@@ -316,18 +320,19 @@ def test_environ_builder_unicode_file_mix():
     for use_tempfile in False, True:
         f = FileStorage(BytesIO(br"\N{SNOWMAN}"), "snowman.txt")
         d = MultiDict(dict(f=f, s="\N{SNOWMAN}"))
-        stream, length, boundary = stream_encode_multipart(
-            d, use_tempfile, threshold=150
-        )
+        stream, length, boundary = stream_encode_multipart(d,
+                                                           use_tempfile,
+                                                           threshold=150)
         assert isinstance(stream, BytesIO) != use_tempfile
 
-        _, form, files = parse_form_data(
-            {
-                "wsgi.input": stream,
-                "CONTENT_LENGTH": str(length),
-                "CONTENT_TYPE": f'multipart/form-data; boundary="{boundary}"',
-            }
-        )
+        _, form, files = parse_form_data({
+            "wsgi.input":
+            stream,
+            "CONTENT_LENGTH":
+            str(length),
+            "CONTENT_TYPE":
+            f'multipart/form-data; boundary="{boundary}"',
+        })
         assert form["s"] == "\N{SNOWMAN}"
         assert files["f"].name == "f"
         assert files["f"].filename == "snowman.txt"
@@ -439,8 +444,7 @@ def test_follow_local_redirect():
 
 
 @pytest.mark.parametrize(
-    ("code", "keep"), ((302, False), (301, False), (307, True), (308, True))
-)
+    ("code", "keep"), ((302, False), (301, False), (307, True), (308, True)))
 def test_follow_redirect_body(code, keep):
     @Request.application
     def app(request):
@@ -458,9 +462,10 @@ def test_follow_redirect_body(code, keep):
         return redirect("http://localhost/some/redirect/", code=code)
 
     c = Client(app)
-    response = c.post(
-        "/", follow_redirects=True, data={"foo": "bar"}, headers={"X-Foo": "bar"}
-    )
+    response = c.post("/",
+                      follow_redirects=True,
+                      data={"foo": "bar"},
+                      headers={"X-Foo": "bar"})
     assert response.status_code == 200
     assert response.data == b"current url: http://localhost/some/redirect/"
 
@@ -468,27 +473,25 @@ def test_follow_redirect_body(code, keep):
 def test_follow_external_redirect():
     env = create_environ("/", base_url="http://localhost")
     c = Client(external_redirect_demo_app)
-    pytest.raises(
-        RuntimeError, lambda: c.get(environ_overrides=env, follow_redirects=True)
-    )
+    pytest.raises(RuntimeError,
+                  lambda: c.get(environ_overrides=env, follow_redirects=True))
 
 
 def test_follow_external_redirect_on_same_subdomain():
     env = create_environ("/", base_url="http://example.com")
-    c = Client(external_subdomain_redirect_demo_app, allow_subdomain_redirects=True)
+    c = Client(external_subdomain_redirect_demo_app,
+               allow_subdomain_redirects=True)
     c.get(environ_overrides=env, follow_redirects=True)
 
     # check that this does not work for real external domains
     env = create_environ("/", base_url="http://localhost")
-    pytest.raises(
-        RuntimeError, lambda: c.get(environ_overrides=env, follow_redirects=True)
-    )
+    pytest.raises(RuntimeError,
+                  lambda: c.get(environ_overrides=env, follow_redirects=True))
 
     # check that subdomain redirects fail if no `allow_subdomain_redirects` is applied
     c = Client(external_subdomain_redirect_demo_app)
-    pytest.raises(
-        RuntimeError, lambda: c.get(environ_overrides=env, follow_redirects=True)
-    )
+    pytest.raises(RuntimeError,
+                  lambda: c.get(environ_overrides=env, follow_redirects=True))
 
 
 def test_follow_redirect_loop():
@@ -506,9 +509,9 @@ def test_follow_redirect_non_root_base_url():
         return Response(request.path)
 
     c = Client(app)
-    response = c.get(
-        "/redirect", base_url="http://localhost/other", follow_redirects=True
-    )
+    response = c.get("/redirect",
+                     base_url="http://localhost/other",
+                     follow_redirects=True)
     assert response.data == b"/done"
 
 
@@ -672,7 +675,8 @@ def test_run_wsgi_apps(buffered, iterable):
 
         return Rv()
 
-    for app in (simple_app, yielding_app, late_start_response, depends_on_close):
+    for app in (simple_app, yielding_app, late_start_response,
+                depends_on_close):
         if iterable:
             app = iterable_middleware(app)
         app_iter, status, headers = run_wsgi_app(app, {}, buffered=buffered)
@@ -744,7 +748,6 @@ def test_run_wsgi_app_closing_iterator():
 
 def iterable_middleware(app):
     """Guarantee that the app returns an iterable"""
-
     def inner(environ, start_response):
         rv = app(environ, start_response)
 
@@ -774,7 +777,8 @@ def test_multiple_cookies():
     resp = client.get("/")
     assert resp.data == b"[]"
     resp = client.get("/")
-    assert resp.data == _to_bytes(repr([("test1", "foo"), ("test2", "bar")]), "ascii")
+    assert resp.data == _to_bytes(repr([("test1", "foo"), ("test2", "bar")]),
+                                  "ascii")
 
 
 def test_correct_open_invocation_on_redirect():
@@ -849,7 +853,9 @@ def test_content_type():
     resp = client.get("/", data=b"testing", mimetype="text/css")
     assert resp.data == b"text/css; charset=utf-8"
 
-    resp = client.get("/", data=b"testing", mimetype="application/octet-stream")
+    resp = client.get("/",
+                      data=b"testing",
+                      mimetype="application/octet-stream")
     assert resp.data == b"application/octet-stream"
 
 

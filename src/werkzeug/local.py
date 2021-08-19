@@ -4,15 +4,12 @@ import operator
 import sys
 import typing as t
 import warnings
-from functools import partial
-from functools import update_wrapper
+from functools import partial, update_wrapper
 
 from .wsgi import ClosingIterator
 
 if t.TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse
-    from _typeshed.wsgi import WSGIApplication
-    from _typeshed.wsgi import WSGIEnvironment
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 F = t.TypeVar("F", bound=t.Callable[..., t.Any])
 
@@ -45,7 +42,8 @@ try:
         # ContextVars, Greenlet <0.4.17 does not.
         import greenlet
 
-        greenlet_patched = getattr(greenlet, "GREENLET_USE_CONTEXT_VARS", False)
+        greenlet_patched = getattr(greenlet, "GREENLET_USE_CONTEXT_VARS",
+                                   False)
 
         if not greenlet_patched:
             # If Gevent is used, check it has patched ContextVars,
@@ -56,16 +54,15 @@ try:
                 # Gevent isn't used, but Greenlet is and hasn't patched
                 raise _CannotUseContextVar()
             else:
-                if is_object_patched("threading", "local") and not is_object_patched(
-                    "contextvars", "ContextVar"
-                ):
+                if is_object_patched("threading",
+                                     "local") and not is_object_patched(
+                                         "contextvars", "ContextVar"):
                     raise _CannotUseContextVar()
 
     def __release_local__(storage: t.Any) -> None:
         # Can remove when support for non-stdlib ContextVars is
         # removed, see "Fake" version below.
         storage.set({})
-
 
 except (ImportError, _CannotUseContextVar):
 
@@ -114,7 +111,7 @@ def release_local(local: t.Union["Local", "LocalStack"]) -> None:
 
 
 class Local:
-    __slots__ = ("_storage",)
+    __slots__ = ("_storage", )
 
     def __init__(self) -> None:
         object.__setattr__(self, "_storage", ContextVar("local_storage"))
@@ -348,10 +345,8 @@ class LocalManager:
         """Wrap a WSGI application so that cleaning up happens after
         request end.
         """
-
-        def application(
-            environ: "WSGIEnvironment", start_response: "StartResponse"
-        ) -> t.Iterable[bytes]:
+        def application(environ: "WSGIEnvironment",
+                        start_response: "StartResponse") -> t.Iterable[bytes]:
             return ClosingIterator(app(environ, start_response), self.cleanup)
 
         return application
@@ -421,7 +416,9 @@ class _ProxyLookup:
     def __set_name__(self, owner: "LocalProxy", name: str) -> None:
         self.name = name
 
-    def __get__(self, instance: "LocalProxy", owner: t.Optional[type] = None) -> t.Any:
+    def __get__(self,
+                instance: "LocalProxy",
+                owner: t.Optional[type] = None) -> t.Any:
         if instance is None:
             if self.class_value is not None:
                 return self.class_value
@@ -444,7 +441,8 @@ class _ProxyLookup:
     def __repr__(self) -> str:
         return f"proxy {self.name}"
 
-    def __call__(self, instance: "LocalProxy", *args: t.Any, **kwargs: t.Any) -> t.Any:
+    def __call__(self, instance: "LocalProxy", *args: t.Any,
+                 **kwargs: t.Any) -> t.Any:
         """Support calling unbound methods from the class. For example,
         this happens with ``copy.copy``, which does
         ``type(x).__copy__(x)``. ``type(x)`` can't be proxied, so it
@@ -460,9 +458,9 @@ class _ProxyIOp(_ProxyLookup):
 
     __slots__ = ()
 
-    def __init__(
-        self, f: t.Optional[t.Callable] = None, fallback: t.Optional[t.Callable] = None
-    ) -> None:
+    def __init__(self,
+                 f: t.Optional[t.Callable] = None,
+                 fallback: t.Optional[t.Callable] = None) -> None:
         super().__init__(f, fallback)
 
         def bind_f(instance: "LocalProxy", obj: t.Any) -> t.Callable:
@@ -477,7 +475,6 @@ class _ProxyIOp(_ProxyLookup):
 
 def _l_to_r_op(op: F) -> F:
     """Swap the argument order to turn an l-op into an r-op."""
-
     def r_op(obj: t.Any, other: t.Any) -> t.Any:
         return op(other, obj)
 
@@ -556,15 +553,16 @@ class LocalProxy:
         try:
             return getattr(self.__local, self.__name)  # type: ignore
         except AttributeError:
-            raise RuntimeError(f"no object bound to {self.__name}")  # type: ignore
+            raise RuntimeError(
+                f"no object bound to {self.__name}")  # type: ignore
 
     __doc__ = _ProxyLookup(  # type: ignore
-        class_value=__doc__, fallback=lambda self: type(self).__doc__
-    )
+        class_value=__doc__,
+        fallback=lambda self: type(self).__doc__)
     # __del__ should only delete the proxy
     __repr__ = _ProxyLookup(  # type: ignore
-        repr, fallback=lambda self: f"<{type(self).__name__} unbound>"
-    )
+        repr,
+        fallback=lambda self: f"<{type(self).__name__} unbound>")
     __str__ = _ProxyLookup(str)  # type: ignore
     __bytes__ = _ProxyLookup(bytes)
     __format__ = _ProxyLookup()  # type: ignore
@@ -592,10 +590,13 @@ class LocalProxy:
     # __init_subclass__ (proxying metaclass not supported)
     # __prepare__ (metaclass)
     __class__ = _ProxyLookup(fallback=lambda self: type(self))  # type: ignore
-    __instancecheck__ = _ProxyLookup(lambda self, other: isinstance(other, self))
-    __subclasscheck__ = _ProxyLookup(lambda self, other: issubclass(other, self))
+    __instancecheck__ = _ProxyLookup(
+        lambda self, other: isinstance(other, self))
+    __subclasscheck__ = _ProxyLookup(
+        lambda self, other: issubclass(other, self))
     # __class_getitem__ triggered through __getitem__
-    __call__ = _ProxyLookup(lambda self, *args, **kwargs: self(*args, **kwargs))
+    __call__ = _ProxyLookup(
+        lambda self, *args, **kwargs: self(*args, **kwargs))
     __len__ = _ProxyLookup(len)
     __length_hint__ = _ProxyLookup(operator.length_hint)
     __getitem__ = _ProxyLookup(operator.getitem)

@@ -2,38 +2,40 @@ import typing as t
 from datetime import datetime
 
 from .._internal import _to_str
-from ..datastructures import Accept
-from ..datastructures import Authorization
-from ..datastructures import CharsetAccept
-from ..datastructures import ETags
-from ..datastructures import Headers
-from ..datastructures import HeaderSet
-from ..datastructures import IfRange
-from ..datastructures import ImmutableList
-from ..datastructures import ImmutableMultiDict
-from ..datastructures import LanguageAccept
-from ..datastructures import MIMEAccept
-from ..datastructures import MultiDict
-from ..datastructures import Range
-from ..datastructures import RequestCacheControl
-from ..http import parse_accept_header
-from ..http import parse_authorization_header
-from ..http import parse_cache_control_header
-from ..http import parse_cookie
-from ..http import parse_date
-from ..http import parse_etags
-from ..http import parse_if_range_header
-from ..http import parse_list_header
-from ..http import parse_options_header
-from ..http import parse_range_header
-from ..http import parse_set_header
+from ..datastructures import (
+    Accept,
+    Authorization,
+    CharsetAccept,
+    ETags,
+    Headers,
+    HeaderSet,
+    IfRange,
+    ImmutableList,
+    ImmutableMultiDict,
+    LanguageAccept,
+    MIMEAccept,
+    MultiDict,
+    Range,
+    RequestCacheControl,
+)
+from ..http import (
+    parse_accept_header,
+    parse_authorization_header,
+    parse_cache_control_header,
+    parse_cookie,
+    parse_date,
+    parse_etags,
+    parse_if_range_header,
+    parse_list_header,
+    parse_options_header,
+    parse_range_header,
+    parse_set_header,
+)
 from ..urls import url_decode
 from ..user_agent import UserAgent
 from ..useragents import _UserAgent as _DeprecatedUserAgent
-from ..utils import cached_property
-from ..utils import header_property
-from .utils import get_current_url
-from .utils import get_host
+from ..utils import cached_property, header_property
+from .utils import get_current_url, get_host
 
 
 class Request:
@@ -192,8 +194,7 @@ class Request:
         """
         if "X-Forwarded-For" in self.headers:
             return self.list_storage_class(
-                parse_list_header(self.headers["X-Forwarded-For"])
-            )
+                parse_list_header(self.headers["X-Forwarded-For"]))
         elif self.remote_addr is not None:
             return self.list_storage_class([self.remote_addr])
         return self.list_storage_class()
@@ -214,14 +215,14 @@ class Request:
     def url(self) -> str:
         """The full request URL with the scheme, host, root path, path,
         and query string."""
-        return get_current_url(
-            self.scheme, self.host, self.root_path, self.path, self.query_string
-        )
+        return get_current_url(self.scheme, self.host, self.root_path,
+                               self.path, self.query_string)
 
     @cached_property
     def base_url(self) -> str:
         """Like :attr:`url` but without the query string."""
-        return get_current_url(self.scheme, self.host, self.root_path, self.path)
+        return get_current_url(self.scheme, self.host, self.root_path,
+                               self.path)
 
     @cached_property
     def root_url(self) -> str:
@@ -240,9 +241,8 @@ class Request:
         """The host name the request was made to, including the port if
         it's non-standard. Validated with :attr:`trusted_hosts`.
         """
-        return get_host(
-            self.scheme, self.headers.get("host"), self.server, self.trusted_hosts
-        )
+        return get_host(self.scheme, self.headers.get("host"), self.server,
+                        self.trusted_hosts)
 
     @cached_property
     def cookies(self) -> "ImmutableMultiDict[str, str]":
@@ -345,8 +345,7 @@ class Request:
     def _parse_content_type(self) -> None:
         if not hasattr(self, "_parsed_content_type"):
             self._parsed_content_type = parse_options_header(
-                self.headers.get("Content-Type", "")
-            )
+                self.headers.get("Content-Type", ""))
 
     @property
     def mimetype(self) -> str:
@@ -391,7 +390,8 @@ class Request:
         """List of charsets this client supports as
         :class:`~werkzeug.datastructures.CharsetAccept` object.
         """
-        return parse_accept_header(self.headers.get("Accept-Charset"), CharsetAccept)
+        return parse_accept_header(self.headers.get("Accept-Charset"),
+                                   CharsetAccept)
 
     @cached_property
     def accept_encodings(self) -> Accept:
@@ -410,7 +410,8 @@ class Request:
            In previous versions this was a regular
            :class:`~werkzeug.datastructures.Accept` object.
         """
-        return parse_accept_header(self.headers.get("Accept-Language"), LanguageAccept)
+        return parse_accept_header(self.headers.get("Accept-Language"),
+                                   LanguageAccept)
 
     # ETag
 
@@ -420,7 +421,8 @@ class Request:
         for the incoming cache control headers.
         """
         cache_control = self.headers.get("Cache-Control")
-        return parse_cache_control_header(cache_control, None, RequestCacheControl)
+        return parse_cache_control_header(cache_control, None,
+                                          RequestCacheControl)
 
     @cached_property
     def if_match(self) -> ETags:
@@ -504,34 +506,28 @@ class Request:
 
     origin = header_property[str](
         "Origin",
-        doc=(
-            "The host that the request originated from. Set"
-            " :attr:`~CORSResponseMixin.access_control_allow_origin` on"
-            " the response to indicate which origins are allowed."
-        ),
+        doc=("The host that the request originated from. Set"
+             " :attr:`~CORSResponseMixin.access_control_allow_origin` on"
+             " the response to indicate which origins are allowed."),
         read_only=True,
     )
 
     access_control_request_headers = header_property(
         "Access-Control-Request-Headers",
         load_func=parse_set_header,
-        doc=(
-            "Sent with a preflight request to indicate which headers"
-            " will be sent with the cross origin request. Set"
-            " :attr:`~CORSResponseMixin.access_control_allow_headers`"
-            " on the response to indicate which headers are allowed."
-        ),
+        doc=("Sent with a preflight request to indicate which headers"
+             " will be sent with the cross origin request. Set"
+             " :attr:`~CORSResponseMixin.access_control_allow_headers`"
+             " on the response to indicate which headers are allowed."),
         read_only=True,
     )
 
     access_control_request_method = header_property[str](
         "Access-Control-Request-Method",
-        doc=(
-            "Sent with a preflight request to indicate which method"
-            " will be used for the cross origin request. Set"
-            " :attr:`~CORSResponseMixin.access_control_allow_methods`"
-            " on the response to indicate which methods are allowed."
-        ),
+        doc=("Sent with a preflight request to indicate which method"
+             " will be used for the cross origin request. Set"
+             " :attr:`~CORSResponseMixin.access_control_allow_methods`"
+             " on the response to indicate which methods are allowed."),
         read_only=True,
     )
 
@@ -541,8 +537,5 @@ class Request:
         :mimetype:`application/json` or :mimetype:`application/*+json`.
         """
         mt = self.mimetype
-        return (
-            mt == "application/json"
-            or mt.startswith("application/")
-            and mt.endswith("+json")
-        )
+        return (mt == "application/json" or
+                mt.startswith("application/") and mt.endswith("+json"))
