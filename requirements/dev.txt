@@ -36,7 +36,7 @@ greenlet==1.1.1
     # via -r requirements/tests.in
 identify==2.2.13
     # via pre-commit
-idna==3.2
+idna==3.7
     # via requests
 imagesize==1.2.0
     # via sphinx
